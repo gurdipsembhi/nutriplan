@@ -58,13 +58,14 @@ steps:
     args:
       - -c
       - |
-        source /workspace/backend_url.env
+        set -e
+        . /workspace/backend_url.env
         cd client
         npm install
         echo "VITE_API_URL=$$BACKEND_URL" > .env.production
         echo "VITE_APP_NAME=NutriPlan"  >> .env.production
         npm run build
-        echo "Frontend built with VITE_API_URL=$$BACKEND_URL"
+        ls dist/ && echo "✓ dist created"
 
   # ── 6. Deploy frontend to Firebase Hosting ──────────────────
   - name: "node:20-alpine"
