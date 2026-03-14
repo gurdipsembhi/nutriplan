@@ -7,7 +7,7 @@ import plansRouter from "./routes/plans";
 
 dotenv.config();
 
-const required = ["MONGODB_URI", "ANTHROPIC_API_KEY", "CLIENT_URL"];
+const required = ["MONGODB_URI", "OPENAI_API_KEY", "CLIENT_URL"];
 required.forEach((key) => {
   if (!process.env[key]) {
     console.error(`Missing env var: ${key}`);

@@ -34,7 +34,7 @@ steps:
       - --allow-unauthenticated
       - --port=8080
       - --set-env-vars=NODE_ENV=production
-      - --update-secrets=MONGODB_URI=MONGODB_URI:latest,ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,CLIENT_URL=CLIENT_URL:latest,CLAUDE_MODEL=CLAUDE_MODEL:latest,CLAUDE_MAX_TOKENS=CLAUDE_MAX_TOKENS:latest
+      - --update-secrets=MONGODB_URI=MONGODB_URI:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest,CLIENT_URL=CLIENT_URL:latest,OPENAI_MODEL=OPENAI_MODEL:latest,OPENAI_MAX_TOKENS=OPENAI_MAX_TOKENS:latest
 
   # ── 4. Get the deployed Cloud Run URL ───────────────────────
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"

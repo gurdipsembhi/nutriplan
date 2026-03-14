@@ -9,3 +9,4 @@ server/dist/
 npm-debug.log*
 .DS_Store
 Thumbs.db
+setup-gcp.sh

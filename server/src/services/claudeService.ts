@@ -1,10 +1,10 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
 function getClient() {
-  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 }
-function getModel()  { return process.env.CLAUDE_MODEL ?? "claude-sonnet-4-20250514"; }
-function getMaxTok() { return parseInt(process.env.CLAUDE_MAX_TOKENS ?? "4000"); }
+function getModel()  { return process.env.OPENAI_MODEL ?? "gpt-4o"; }
+function getMaxTok() { return parseInt(process.env.OPENAI_MAX_TOKENS ?? "4000"); }
 
 const NUTRITION_SYSTEM = `You are a nutrition database API.
 Return ONLY a valid JSON object. No markdown, no explanation, no backticks.
@@ -20,17 +20,15 @@ export async function lookupNutrition(unknownFoods: string[]): Promise<Record<st
   dietType: "veg" | "nonveg" | "both";
 }>> {
   const attempt = async (): Promise<string> => {
-    const msg = await getClient().messages.create({
+    const msg = await getClient().chat.completions.create({
       model: getModel(),
       max_tokens: 1500,
-      system: NUTRITION_SYSTEM,
       messages: [
-        { role: "user", content: `Return nutrition data for these foods: ${unknownFoods.join(", ")}` },
+        { role: "system", content: NUTRITION_SYSTEM },
+        { role: "user",   content: `Return nutrition data for these foods: ${unknownFoods.join(", ")}` },
       ],
     });
-    const block = msg.content[0];
-    if (block.type !== "text") return "{}";
-    return block.text;
+    return msg.choices[0]?.message?.content ?? "{}";
   };
 
   let raw = await attempt();
@@ -95,14 +93,16 @@ ${foodContext}
 Generate a detailed 5-meal plan using ONLY these foods.
 `;
 
-  const msg = await getClient().messages.create({
+  const msg = await getClient().chat.completions.create({
     model: getModel(),
     max_tokens: getMaxTok(),
-    system: DIET_SYSTEM,
-    messages: [{ role: "user", content: userMessage }],
+    messages: [
+      { role: "system", content: DIET_SYSTEM },
+      { role: "user",   content: userMessage },
+    ],
   });
 
-  const block = msg.content[0];
-  if (block.type !== "text") throw new Error("Unexpected response type from Claude");
-  return block.text;
+  const text = msg.choices[0]?.message?.content;
+  if (!text) throw new Error("Empty response from OpenAI");
+  return text;
 }
