@@ -1,8 +1,8 @@
-import Food, { IFood } from "../models/Food";
+import Food from "../models/Food";
 import { lookupNutrition } from "./claudeService";
 
 interface LookupResult {
-  found: Partial<IFood>[];
+  found: Record<string, unknown>[];
   added: string[];
 }
 

@@ -24,7 +24,7 @@ export const generatePlan = async (req: Request, res: Response): Promise<void> =
         { name: { $in: normalizedFoods } },
         { aliases: { $in: normalizedFoods } },
       ],
-    }).lean();
+    }).select("name calories protein carbs fat fiber dietType").lean();
 
     const bmr = calcBMR(profile.weight, profile.height, profile.age, profile.gender);
     const tdee = calcTDEE(bmr);

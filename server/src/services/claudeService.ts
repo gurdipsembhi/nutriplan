@@ -1,5 +1,4 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { IFood } from "../models/Food";
 
 function getClient() {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -49,8 +48,18 @@ export async function lookupNutrition(unknownFoods: string[]): Promise<Record<st
   }
 }
 
+interface LeanFood {
+  name?: string;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
+  dietType?: string;
+}
+
 interface GeneratePlanParams {
-  foods: Partial<IFood>[];
+  foods: LeanFood[];
   profile: { height: number; weight: number; age: number; gender: string };
   goal: string;
   targetCalories: number;

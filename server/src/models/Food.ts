@@ -8,8 +8,8 @@ export interface IFood extends Document {
   fat: number;
   carbs: number;
   fiber: number;
-  vitamins: Map<string, number>;
-  minerals: Map<string, number>;
+  vitamins: Record<string, number>;
+  minerals: Record<string, number>;
   per: string;
   dietType: "veg" | "nonveg" | "both";
   source: "seed" | "llm" | "manual";
