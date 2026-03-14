@@ -44,11 +44,11 @@ steps:
     args:
       - -c
       - |
-        URL=$(gcloud run services describe $_SERVICE_NAME \
+        URL=$$(gcloud run services describe $_SERVICE_NAME \
           --region=$_REGION \
           --format="value(status.url)")
-        echo "BACKEND_URL=$URL" > /workspace/backend_url.env
-        echo "Cloud Run URL: $URL"
+        echo "BACKEND_URL=$$URL" > /workspace/backend_url.env
+        echo "Cloud Run URL: $$URL"
 
   # ── 5. Install client deps & build frontend ─────────────────
   - name: "node:20-alpine"
@@ -61,10 +61,10 @@ steps:
         source /workspace/backend_url.env
         cd client
         npm install
-        echo "VITE_API_URL=$BACKEND_URL" > .env.production
+        echo "VITE_API_URL=$$BACKEND_URL" > .env.production
         echo "VITE_APP_NAME=NutriPlan"  >> .env.production
         npm run build
-        echo "Frontend built with VITE_API_URL=$BACKEND_URL"
+        echo "Frontend built with VITE_API_URL=$$BACKEND_URL"
 
   # ── 6. Deploy frontend to Firebase Hosting ──────────────────
   - name: "node:20-alpine"
