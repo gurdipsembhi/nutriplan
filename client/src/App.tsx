@@ -11,6 +11,7 @@ import DailyLogView from "./components/DailyLogView";
 import WeeklyPlanView from "./components/WeeklyPlanView";
 import GroceryListView from "./components/GroceryListView";
 import WeightLogView from "./components/WeightTracker/WeightLogView";
+import WeeklyReportView from "./components/WeeklyReport/WeeklyReportView";
 
 // Stable device-scoped userId — persisted in localStorage until auth is added
 function getOrCreateUserId(): string {
@@ -30,6 +31,7 @@ export default function App() {
   const [showWeekly,  setShowWeekly]  = useState(false);
   const [showGrocery, setShowGrocery] = useState(false);
   const [showWeight,  setShowWeight]  = useState(false);
+  const [showReport,  setShowReport]  = useState(false);
 
   // Show daily log view
   if (
@@ -89,6 +91,25 @@ export default function App() {
     );
   }
 
+  // Show weekly report view
+  if (
+    showReport &&
+    state.step === "done" &&
+    state.planId &&
+    state.goal
+  ) {
+    return (
+      <WeeklyReportView
+        userId={USER_ID}
+        planId={state.planId}
+        selectedFoods={state.selectedFoods}
+        goal={state.goal}
+        onBack={() => setShowReport(false)}
+        onRecalculate={() => { setShowReport(false); reset(); }}
+      />
+    );
+  }
+
   // Show grocery list view
   if (showGrocery && state.step === "done" && state.planId) {
     return (
@@ -129,6 +150,7 @@ export default function App() {
             onTrack={() => setShowLog(true)}
             onWeeklyPlan={() => setShowWeekly(true)}
             onWeightTracker={() => setShowWeight(true)}
+            onWeeklyReport={() => setShowReport(true)}
           />
         )}
       </main>

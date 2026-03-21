@@ -143,6 +143,50 @@ export interface GroceryCategory {
   items: GroceryItem[];
 }
 
+export interface WeeklyReport {
+  _id: string;
+  userId: string;
+  weekStartDate: string;
+  weekEndDate: string;
+  calorieStats: {
+    targetCalories: number;
+    daysHit: number;
+    daysOver: number;
+    daysUnder: number;
+    avgDailyCalories: number;
+    totalCalorieDeficitOrSurplus: number;
+  };
+  proteinStats: {
+    targetProteinG: number;
+    daysHit: number;
+    avgDailyProteinG: number;
+    weeklyProteinDebtG: number;
+    weeklyProteinSurplusG: number;
+  };
+  carbStats: {
+    targetCarbsG: number;
+    daysHit: number;
+    avgDailyCarbsG: number;
+  };
+  fatStats: {
+    targetFatG: number;
+    daysHit: number;
+    avgDailyFatG: number;
+  };
+  muscleInsight: {
+    riskLevel: "optimal" | "low_risk" | "moderate_risk" | "high_risk";
+    proteinDebtG: number;
+    interpretation: string;
+    recoveryActions: string[];
+  };
+  overallScore: number;
+  trend: "improving" | "declining" | "stable";
+  planShouldRegenerate: boolean;
+  isPartial: boolean;
+  llmInsightText: string;
+  createdAt: string;
+}
+
 export interface WeeklyDay {
   day: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
   meals: WeeklyMeal[];

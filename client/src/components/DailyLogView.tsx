@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import type { DailyLog, Meal, MealPlanned, Macros, SwapMealOption, DietType, Goal } from "../types";
-import { getTodayLog, checkInMeal, logMealActual, swapMeal, addWater } from "../lib/api";
+import { getTodayLog, checkInMeal, logMealActual, swapMeal, addWater, getWeekLogs } from "../lib/api";
 import DayProgressBar from "./DayProgressBar";
 import MealCard from "./MealCard";
 import MealSwapModal from "./MealSwapModal";
@@ -38,6 +38,33 @@ function getTodayString(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function getCurrentWeekStart(): string {
+  const now = new Date();
+  const day  = now.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const mon  = new Date(now);
+  mon.setDate(now.getDate() + diff);
+  return mon.toISOString().slice(0, 10);
+}
+
+// ── ProteinDebtMeter ─────────────────────────────────────────────────────────
+
+function ProteinDebtMeter({ debt }: { debt: number }) {
+  const { text, color, bg } =
+    debt === 0
+      ? { text: "You are on track 💪",                                   color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20" }
+      : debt < 50
+      ? { text: `Mild protein debt: +${debt}g needed this week`,         color: "text-yellow-400",  bg: "bg-yellow-400/10  border-yellow-400/20"  }
+      : { text: "High protein debt: consider a high-protein snack today", color: "text-red-400",     bg: "bg-red-400/10     border-red-400/20"     };
+
+  return (
+    <div className={`border rounded-xl px-4 py-3 flex items-center gap-2 ${bg}`}>
+      <span className="text-base">⚡</span>
+      <p className={`text-xs font-medium ${color}`}>{text}</p>
+    </div>
+  );
+}
+
 function buildPlannedMeals(targetCalories: number, macros: Macros): Meal[] {
   return MEAL_NAMES.map((name) => {
     const split = MEAL_SPLITS[name];
@@ -71,6 +98,9 @@ export default function DailyLogView({
   const [waterGoalMl,  setWaterGoalMl]  = useState(Math.round(weightKg * 35));
   const [waterLoading, setWaterLoading] = useState(false);
 
+  // Weekly protein debt for ProteinDebtMeter
+  const [proteinDebt, setProteinDebt] = useState(0);
+
   // Swap state
   const [swapMealName,   setSwapMealName]   = useState<string | null>(null);
   const [swapOptions,    setSwapOptions]    = useState<SwapMealOption[] | null>(null);
@@ -81,16 +111,34 @@ export default function DailyLogView({
 
   const fetchLog = useCallback(async () => {
     try {
-      const { log: fetched } = await getTodayLog(userId);
-      setLog(fetched);
-      setWaterMl(fetched.waterMl ?? 0);
-      if (fetched.waterGoalMl > 0) setWaterGoalMl(fetched.waterGoalMl);
-    } catch {
-      setLog(null);
+      const weekStart = getCurrentWeekStart();
+
+      // Fetch independently — a 404 on today's log is expected and must not
+      // block the week logs fetch used by ProteinDebtMeter.
+      const [todayResult, weekResult] = await Promise.allSettled([
+        getTodayLog(userId),
+        getWeekLogs(userId, weekStart),
+      ]);
+
+      if (todayResult.status === "fulfilled") {
+        const fetched = todayResult.value.log;
+        setLog(fetched);
+        setWaterMl(fetched.waterMl ?? 0);
+        if (fetched.waterGoalMl > 0) setWaterGoalMl(fetched.waterGoalMl);
+      }
+
+      if (weekResult.status === "fulfilled") {
+        let debt = 0;
+        for (const l of weekResult.value.logs) {
+          const diff = macros.protein - l.dayTotals.actualProtein;
+          if (diff > 0) debt += diff;
+        }
+        setProteinDebt(Math.round(debt));
+      }
     } finally {
       setInit(false);
     }
-  }, [userId]);
+  }, [userId, macros.protein]);
 
   async function handleAddWater() {
     setWaterLoading(true);
@@ -244,6 +292,9 @@ export default function DailyLogView({
         onAdd={handleAddWater}
         loading={waterLoading}
       />
+
+      {/* Weekly protein debt meter */}
+      <ProteinDebtMeter debt={proteinDebt} />
 
       {/* Error banner */}
       {error && (

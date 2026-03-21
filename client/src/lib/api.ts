@@ -1,4 +1,4 @@
-import type { FoodItem, GeneratePlanResponse, DietType, Goal, UserProfile, DailyLog, Meal, MealPlanned, WeeklyDay, SwapMealOption, GroceryCategory, WeightLog, WeightTrend } from "../types";
+import type { FoodItem, GeneratePlanResponse, DietType, Goal, UserProfile, DailyLog, Meal, MealPlanned, WeeklyDay, SwapMealOption, GroceryCategory, WeightLog, WeightTrend, WeeklyReport } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
 
@@ -152,6 +152,43 @@ export async function getWeightTrend(userId: string): Promise<WeightTrend> {
     `${BASE_URL}/api/weight/trend?userId=${encodeURIComponent(userId)}`
   );
   if (!res.ok) throw new Error("Failed to fetch weight trend");
+  return res.json();
+}
+
+export async function generateWeeklyReport(params: {
+  userId: string;
+  planId: string;
+  selectedFoods: string[];
+  goal: string;
+  weekStartDate?: string;
+}): Promise<{ report: WeeklyReport }> {
+  const res = await fetch(`${BASE_URL}/api/reports/weekly/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error("Failed to generate weekly report");
+  return res.json();
+}
+
+export async function getLatestWeeklyReport(
+  userId: string
+): Promise<{ report: WeeklyReport | null }> {
+  const res = await fetch(
+    `${BASE_URL}/api/reports/weekly/latest?userId=${encodeURIComponent(userId)}`
+  );
+  if (!res.ok) throw new Error("Failed to fetch weekly report");
+  return res.json();
+}
+
+export async function getWeekLogs(
+  userId: string,
+  weekStart: string
+): Promise<{ logs: DailyLog[] }> {
+  const res = await fetch(
+    `${BASE_URL}/api/logs?userId=${encodeURIComponent(userId)}&weekStart=${weekStart}`
+  );
+  if (!res.ok) throw new Error("Failed to fetch week logs");
   return res.json();
 }
 

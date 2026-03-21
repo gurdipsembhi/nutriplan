@@ -9,9 +9,10 @@ interface DietPlanViewProps {
   onTrack: () => void;
   onWeeklyPlan: () => void;
   onWeightTracker: () => void;
+  onWeeklyReport: () => void;
 }
 
-export default function DietPlanView({ plan, macros, targetCalories, onReset, onTrack, onWeeklyPlan, onWeightTracker }: DietPlanViewProps) {
+export default function DietPlanView({ plan, macros, targetCalories, onReset, onTrack, onWeeklyPlan, onWeightTracker, onWeeklyReport }: DietPlanViewProps) {
   const lines = plan.split("\n");
 
   return (
@@ -141,6 +142,13 @@ export default function DietPlanView({ plan, macros, targetCalories, onReset, on
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
           </svg>
           Weight Tracker
+        </button>
+        <button
+          onClick={onWeeklyReport}
+          className="w-full py-3.5 rounded-2xl bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.09] text-slate-200 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+        >
+          <span>🏆</span>
+          Weekly Muscle Report
         </button>
         <button
           onClick={onReset}

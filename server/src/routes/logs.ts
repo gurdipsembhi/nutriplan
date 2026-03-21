@@ -1,7 +1,10 @@
 import { Router } from "express";
-import { checkIn, logMeal, getTodayLog, getLogByDate, addWater } from "../controllers/logsController";
+import { checkIn, logMeal, getTodayLog, getLogByDate, addWater, getWeekLogs } from "../controllers/logsController";
 
 const router = Router();
+
+// GET  /api/logs             — get all logs for a week (?userId=x&weekStart=YYYY-MM-DD)
+router.get("/", getWeekLogs);
 
 // POST /api/logs/checkin     — check off a meal (actual = planned, no portion edit)
 router.post("/checkin", checkIn);

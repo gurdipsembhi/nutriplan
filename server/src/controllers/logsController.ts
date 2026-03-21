@@ -210,6 +210,37 @@ export async function addWater(req: Request, res: Response): Promise<void> {
   }
 }
 
+// ─── GET /api/logs ──────────────────────────────────────────────────────────
+// Query: ?userId=xxx&weekStart=YYYY-MM-DD
+// Returns all logs for a user within a week (Mon–Sun).
+
+export async function getWeekLogs(req: Request, res: Response): Promise<void> {
+  try {
+    const { userId, weekStart } = req.query as { userId: string; weekStart: string };
+
+    if (!userId || !weekStart) {
+      res.status(400).json({ error: "userId and weekStart query params are required" });
+      return;
+    }
+
+    const weekEnd = (() => {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + 6);
+      return d.toISOString().slice(0, 10);
+    })();
+
+    const logs = await DailyLog.find({
+      userId,
+      date: { $gte: weekStart, $lte: weekEnd },
+    }).sort({ date: 1 });
+
+    res.json({ logs });
+  } catch (err) {
+    console.error("getWeekLogs error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
 // ─── GET /api/logs/today ────────────────────────────────────────────────────
 // Query: ?userId=xxx
 // Returns today's log for the user, or 404 if none exists yet.

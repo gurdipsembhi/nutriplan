@@ -179,7 +179,79 @@ Return JSON with this schema:
   }
 }
 
-// ─── Call 4: Meal Swap ────────────────────────────────────────────────────────
+// ─── Call 4: Weekly Insight ───────────────────────────────────────────────────
+
+export interface WeeklyInsightStats {
+  calorieStats: {
+    daysHit:        number;
+    targetCalories: number;
+  };
+  proteinStats: {
+    daysHit:            number;
+    targetProteinG:     number;
+    weeklyProteinDebtG: number;
+  };
+}
+
+export interface WeeklyInsightResult {
+  interpretation:  string;
+  recoveryActions: string[];
+}
+
+export async function generateWeeklyInsight(
+  stats: WeeklyInsightStats,
+  riskLevel: string,
+  goal: string,
+  selectedFoods: string[]
+): Promise<WeeklyInsightResult> {
+  const prompt = `You are a sports nutritionist writing a weekly check-in message.
+Tone: direct, encouraging, data-driven. Never alarmist. Never vague.
+
+Rules:
+- NEVER say the user "lost muscle" on a specific day — muscle synthesis is a weekly process
+- Frame protein shortfalls as "missed synthesis opportunities", not "muscle loss"
+- If protein daysHit >= 5, lead with positive reinforcement
+- If protein daysHit <= 2, be direct about risk without being discouraging
+- Always end with 2-3 specific, actionable food suggestions using the user's available foods
+- Keep total response under 120 words
+
+Weekly stats:
+- Calorie goal hit: ${stats.calorieStats.daysHit}/7 days (target: ${stats.calorieStats.targetCalories} kcal/day)
+- Protein goal hit: ${stats.proteinStats.daysHit}/7 days (target: ${stats.proteinStats.targetProteinG}g/day)
+- Weekly protein debt: ${stats.proteinStats.weeklyProteinDebtG}g
+- Risk level: ${riskLevel}
+- User goal: ${goal}
+- Available foods: ${selectedFoods.join(", ")}
+
+Return JSON: { "interpretation": string, "recoveryActions": string[] }`;
+
+  async function attempt(): Promise<WeeklyInsightResult> {
+    const result = await getJsonModel().generateContent(prompt);
+    const parsed = JSON.parse(result.response.text()) as WeeklyInsightResult;
+    if (!parsed.interpretation || !Array.isArray(parsed.recoveryActions)) {
+      throw new Error("Gemini weekly insight response missing required fields");
+    }
+    return parsed;
+  }
+
+  try {
+    return await attempt();
+  } catch (error) {
+    console.error("Gemini weekly insight first attempt failed, retrying:", error);
+    try {
+      return await attempt();
+    } catch (retryError) {
+      console.error("Gemini weekly insight failed after retry:", retryError);
+      // Return a safe fallback so report generation never blocks
+      return {
+        interpretation: "Your weekly data has been recorded. Keep logging consistently to unlock personalised insights.",
+        recoveryActions: ["Log all 5 meals daily", "Prioritise protein at each meal", "Track your weight each morning"],
+      };
+    }
+  }
+}
+
+// ─── Call 5: Meal Swap ────────────────────────────────────────────────────────
 
 export interface SwapMealParams {
   mealName: string;
