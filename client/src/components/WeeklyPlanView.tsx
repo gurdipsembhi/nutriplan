@@ -9,6 +9,7 @@ interface Props {
   dietType: DietType;
   goal: Goal;
   onBack: () => void;
+  onGroceryList: () => void;
 }
 
 const DAY_ABBR: Record<string, string> = {
@@ -62,7 +63,7 @@ function MealBlock({ meal }: { meal: WeeklyMeal }) {
 }
 
 export default function WeeklyPlanView({
-  planId, selectedFoods, targetCalories, dietType, goal, onBack,
+  planId, selectedFoods, targetCalories, dietType, goal, onBack, onGroceryList,
 }: Props) {
   const [weeklyPlan, setWeeklyPlan] = useState<WeeklyDay[] | null>(null);
   const [activeDay,  setActiveDay]  = useState("Monday");
@@ -185,6 +186,15 @@ export default function WeeklyPlanView({
               ))}
             </div>
           )}
+
+          {/* Grocery list CTA */}
+          <button
+            onClick={onGroceryList}
+            className="w-full py-3 rounded-xl bg-[#12121a] border border-white/10 hover:border-emerald-500/40 text-white/70 hover:text-white text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2"
+          >
+            <span>🛒</span>
+            View Grocery List
+          </button>
         </>
       )}
     </div>

@@ -1,14 +1,20 @@
 import { useEffect, useState, useCallback } from "react";
-import type { DailyLog, Meal, MealPlanned, Macros } from "../types";
-import { getTodayLog, checkInMeal, logMealActual } from "../lib/api";
+import type { DailyLog, Meal, MealPlanned, Macros, SwapMealOption, DietType, Goal } from "../types";
+import { getTodayLog, checkInMeal, logMealActual, swapMeal, addWater } from "../lib/api";
 import DayProgressBar from "./DayProgressBar";
 import MealCard from "./MealCard";
+import MealSwapModal from "./MealSwapModal";
+import WaterTracker from "./WaterTracker";
 
 interface Props {
   planId: string;
   userId: string;
   targetCalories: number;
   macros: Macros;
+  selectedFoods: string[];
+  goal: Goal;
+  dietType: DietType;
+  weightKg: number;
   onBack: () => void;
 }
 
@@ -20,7 +26,6 @@ const MEAL_NAMES = [
   "Dinner",
 ] as const;
 
-// Calorie split across 5 meals (must sum to 1.0)
 const MEAL_SPLITS: Record<string, number> = {
   "Breakfast":         0.25,
   "Mid-Morning Snack": 0.10,
@@ -52,31 +57,58 @@ function buildPlannedMeals(targetCalories: number, macros: Macros): Meal[] {
   });
 }
 
-export default function DailyLogView({ planId, userId, targetCalories, macros, onBack }: Props) {
-  const [log,     setLog]     = useState<DailyLog | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
-  const [init,    setInit]    = useState(true);   // true while fetching initial log
+export default function DailyLogView({
+  planId, userId, targetCalories, macros,
+  selectedFoods, goal, dietType, weightKg, onBack,
+}: Props) {
+  const [log,          setLog]          = useState<DailyLog | null>(null);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState<string | null>(null);
+  const [init,         setInit]         = useState(true);
+
+  // Water state
+  const [waterMl,      setWaterMl]      = useState(0);
+  const [waterGoalMl,  setWaterGoalMl]  = useState(Math.round(weightKg * 35));
+  const [waterLoading, setWaterLoading] = useState(false);
+
+  // Swap state
+  const [swapMealName,   setSwapMealName]   = useState<string | null>(null);
+  const [swapOptions,    setSwapOptions]    = useState<SwapMealOption[] | null>(null);
+  const [swapLoading,    setSwapLoading]    = useState(false);
+  const [swapError,      setSwapError]      = useState<string | null>(null);
 
   const today = getTodayString();
 
-  // Fetch today's log on mount. If none exists yet, show planned meals locally
-  // until the user checks in their first meal (which creates the DB document).
   const fetchLog = useCallback(async () => {
     try {
       const { log: fetched } = await getTodayLog(userId);
       setLog(fetched);
+      setWaterMl(fetched.waterMl ?? 0);
+      if (fetched.waterGoalMl > 0) setWaterGoalMl(fetched.waterGoalMl);
     } catch {
-      // 404 = no log yet for today — that's fine, show planned skeleton
       setLog(null);
     } finally {
       setInit(false);
     }
   }, [userId]);
 
+  async function handleAddWater() {
+    setWaterLoading(true);
+    try {
+      const { waterMl: updated, waterGoalMl: goal } = await addWater({
+        userId, planId, ml: 250, weightKg,
+      });
+      setWaterMl(updated);
+      setWaterGoalMl(goal);
+    } catch {
+      // silent — water logging is non-critical
+    } finally {
+      setWaterLoading(false);
+    }
+  }
+
   useEffect(() => { fetchLog(); }, [fetchLog]);
 
-  // The meals to display: either from the fetched log, or a planned skeleton
   const displayMeals: Meal[] = log?.meals ?? buildPlannedMeals(targetCalories, macros);
 
   const dayTotals = log?.dayTotals ?? {
@@ -95,12 +127,8 @@ export default function DailyLogView({ planId, userId, targetCalories, macros, o
     setError(null);
     try {
       if (!log) {
-        // First action of the day — create the log document with all planned meals
         const { log: created } = await logMealActual({
-          userId,
-          planId,
-          date:  today,
-          mealName,
+          userId, planId, date: today, mealName,
           actual: (() => {
             const m = displayMeals.find((x) => x.mealName === mealName)!;
             return { ...m.planned };
@@ -124,12 +152,8 @@ export default function DailyLogView({ planId, userId, targetCalories, macros, o
     setError(null);
     try {
       const { log: updated } = await logMealActual({
-        userId,
-        planId,
-        date: today,
-        mealName,
-        actual,
-        meals: log ? undefined : displayMeals,   // only seed on first call
+        userId, planId, date: today, mealName, actual,
+        meals: log ? undefined : displayMeals,
       });
       setLog(updated);
     } catch (e) {
@@ -137,6 +161,47 @@ export default function DailyLogView({ planId, userId, targetCalories, macros, o
     } finally {
       setLoading(false);
     }
+  }
+
+  // Step 1: user taps Swap — fetch 2 alternatives from Gemini
+  async function handleSwap(mealName: string) {
+    setSwapMealName(mealName);
+    setSwapOptions(null);
+    setSwapError(null);
+    setSwapLoading(true);
+    try {
+      const meal = displayMeals.find((m) => m.mealName === mealName);
+      const mealTargetCalories = meal?.planned.totalCalories ?? Math.round(targetCalories * MEAL_SPLITS[mealName]);
+      const { alternatives } = await swapMeal({
+        planId,
+        mealName,
+        targetCalories: mealTargetCalories,
+        selectedFoods,
+        goal,
+        dietType,
+      });
+      setSwapOptions(alternatives);
+    } catch (e) {
+      setSwapError(e instanceof Error ? e.message : "Failed to get alternatives");
+      setSwapMealName(null);
+    } finally {
+      setSwapLoading(false);
+    }
+  }
+
+  // Step 2: user picks an alternative — log it as actual
+  async function handleSwapSelect(option: SwapMealOption) {
+    if (!swapMealName) return;
+    setSwapOptions(null);
+    const actual: MealPlanned = {
+      foods:         option.foods,
+      totalCalories: option.totalCalories,
+      protein:       option.protein,
+      carbs:         option.carbs,
+      fat:           option.fat,
+    };
+    await handleLogActual(swapMealName, actual);
+    setSwapMealName(null);
   }
 
   if (init) {
@@ -166,18 +231,39 @@ export default function DailyLogView({ planId, userId, targetCalories, macros, o
           <h2 className="text-white font-bold text-base">Daily Log</h2>
           <p className="text-white/40 text-xs">{today}</p>
         </div>
-        <span className="text-white/40 text-xs w-12 text-right">
-          {checkedCount}/5
-        </span>
+        <span className="text-white/40 text-xs w-12 text-right">{checkedCount}/5</span>
       </div>
 
       {/* Progress summary */}
       <DayProgressBar dayTotals={dayTotals} />
 
+      {/* Water tracker */}
+      <WaterTracker
+        waterMl={waterMl}
+        waterGoalMl={waterGoalMl}
+        onAdd={handleAddWater}
+        loading={waterLoading}
+      />
+
       {/* Error banner */}
       {error && (
         <div className="bg-red-950/40 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
           {error}
+        </div>
+      )}
+
+      {/* Swap loading banner */}
+      {swapLoading && (
+        <div className="bg-[#12121a] border border-white/10 rounded-xl px-4 py-3 flex items-center gap-3">
+          <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+          <p className="text-white/60 text-sm">Finding alternatives…</p>
+        </div>
+      )}
+
+      {/* Swap error */}
+      {swapError && (
+        <div className="bg-red-950/40 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
+          {swapError}
         </div>
       )}
 
@@ -190,6 +276,7 @@ export default function DailyLogView({ planId, userId, targetCalories, macros, o
             loading={loading}
             onCheckIn={handleCheckIn}
             onLogActual={handleLogActual}
+            onSwap={handleSwap}
           />
         ))}
       </div>
@@ -200,6 +287,16 @@ export default function DailyLogView({ planId, userId, targetCalories, macros, o
           <p className="text-emerald-400 font-semibold text-sm">All meals logged</p>
           <p className="text-white/40 text-xs mt-1">Great work today. See you tomorrow.</p>
         </div>
+      )}
+
+      {/* Swap modal */}
+      {swapOptions && swapMealName && (
+        <MealSwapModal
+          mealName={swapMealName}
+          alternatives={swapOptions}
+          onSelect={handleSwapSelect}
+          onClose={() => { setSwapOptions(null); setSwapMealName(null); }}
+        />
       )}
     </div>
   );

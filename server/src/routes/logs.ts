@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { checkIn, logMeal, getTodayLog, getLogByDate } from "../controllers/logsController";
+import { checkIn, logMeal, getTodayLog, getLogByDate, addWater } from "../controllers/logsController";
 
 const router = Router();
 
@@ -11,6 +11,9 @@ router.post("/log-meal", logMeal);
 
 // GET  /api/logs/today       — get today's log for current user
 router.get("/today", getTodayLog);
+
+// POST /api/logs/water       — add ml to today's water total
+router.post("/water", addWater);
 
 // GET  /api/logs/:date       — get log for a specific date (YYYY-MM-DD)
 router.get("/:date", getLogByDate);

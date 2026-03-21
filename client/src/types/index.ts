@@ -85,6 +85,22 @@ export interface DailyLog {
   date: string;
   meals: Meal[];
   dayTotals: DayTotals;
+  waterMl: number;
+  waterGoalMl: number;
+}
+
+export interface SwapMealFood {
+  name: string;
+  grams: number;
+  calories: number;
+}
+
+export interface SwapMealOption {
+  foods: SwapMealFood[];
+  totalCalories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
 }
 
 export interface WeeklyMealFood {
@@ -100,6 +116,31 @@ export interface WeeklyMeal {
   protein: number;
   carbs: number;
   fat: number;
+}
+
+export interface WeightLog {
+  _id: string;
+  userId: string;
+  weight: number;
+  date: string;    // "YYYY-MM-DD"
+  note: string;
+  createdAt: string;
+}
+
+export interface WeightTrend {
+  direction: "losing" | "gaining" | "stable";
+  avgWeeklyChange: number;
+}
+
+export interface GroceryItem {
+  food: string;
+  totalGrams: number;
+  unit: string;
+}
+
+export interface GroceryCategory {
+  name: string;
+  items: GroceryItem[];
 }
 
 export interface WeeklyDay {

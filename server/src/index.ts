@@ -4,7 +4,8 @@ import dotenv from "dotenv";
 import connectDB from "./config/db";
 import foodsRouter from "./routes/foods";
 import plansRouter from "./routes/plans";
-import logsRouter  from "./routes/logs";
+import logsRouter   from "./routes/logs";
+import weightRouter from "./routes/weight";
 
 dotenv.config();
 
@@ -30,7 +31,8 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/foods", foodsRouter);
 app.use("/api/plans", plansRouter);
-app.use("/api/logs",  logsRouter);
+app.use("/api/logs",   logsRouter);
+app.use("/api/weight", weightRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

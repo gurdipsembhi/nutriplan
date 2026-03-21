@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import DailyLog, { IMeal, IDayTotals } from "../models/DailyLog";
+import { calcDailyWaterGoal } from "../services/waterService";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -149,6 +150,63 @@ export async function logMeal(req: Request, res: Response): Promise<void> {
   } catch (err) {
     console.error("logMeal error:", err);
     res.status(500).json({ error: "Server error" });
+  }
+}
+
+// ─── POST /api/logs/water ───────────────────────────────────────────────────
+// Body: { userId, planId, ml, weightKg? }
+// Increments waterMl on today's log, clamped to waterGoalMl.
+// Creates the log document if it doesn't exist yet.
+
+export async function addWater(req: Request, res: Response): Promise<void> {
+  try {
+    const { userId, planId, ml, weightKg } = req.body as {
+      userId: string;
+      planId: string;
+      ml: number;
+      weightKg?: number;
+    };
+
+    if (!userId || !planId || ml == null) {
+      res.status(400).json({ error: "userId, planId, and ml are required" });
+      return;
+    }
+
+    const today = getTodayString();
+    let log = await DailyLog.findOne({ userId, date: today });
+
+    if (!log) {
+      // First action of the day — create a bare log with water fields initialised
+      const waterGoalMl = weightKg ? calcDailyWaterGoal(weightKg) : 0;
+      const clampedMl   = waterGoalMl > 0 ? Math.min(ml, waterGoalMl) : ml;
+      log = await DailyLog.create({
+        userId,
+        planId,
+        date: today,
+        meals: [],
+        dayTotals: {
+          plannedCalories: 0, actualCalories: 0,
+          plannedProtein:  0, actualProtein:  0,
+          plannedCarbs:    0, actualCarbs:    0,
+          plannedFat:      0, actualFat:      0,
+        },
+        waterMl:     clampedMl,
+        waterGoalMl,
+      });
+    } else {
+      // Increment, clamped to goal (no overflow past 100%)
+      const goal      = log.waterGoalMl ?? 0;
+      const newWaterMl = goal > 0
+        ? Math.min((log.waterMl ?? 0) + ml, goal)
+        : (log.waterMl ?? 0) + ml;
+      log.waterMl = newWaterMl;
+      await log.save();
+    }
+
+    res.json({ waterMl: log.waterMl, waterGoalMl: log.waterGoalMl });
+  } catch (err) {
+    console.error("addWater error:", err);
+    res.status(500).json({ error: "Failed to log water" });
   }
 }
 

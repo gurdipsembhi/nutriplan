@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import Food from "../models/Food";
 import DietPlan from "../models/DietPlan";
-import { generateDietPlan, generateWeeklyPlan as geminiGenerateWeeklyPlan } from "../services/geminiService";
+import { generateDietPlan, generateWeeklyPlan as geminiGenerateWeeklyPlan, swapMeal as geminiSwapMeal } from "../services/geminiService";
+import { buildGroceryList } from "../services/groceryService";
 import { calcBMR, calcTDEE, goalCalories, calcMacros } from "../utils/calculations";
 
 // ─── POST /api/plans/generate ─────────────────────────────────────────────────
@@ -109,5 +110,75 @@ export const generateWeeklyPlan = async (req: Request, res: Response): Promise<v
   } catch (err) {
     console.error("generateWeeklyPlan error:", err);
     res.status(500).json({ error: "Failed to generate weekly plan" });
+  }
+};
+
+// ─── POST /api/plans/swap-meal ────────────────────────────────────────────────
+// Body: { planId, mealName, targetCalories, selectedFoods, goal, dietType }
+// Response: { alternatives: [ meal1, meal2 ] }
+
+export const swapMeal = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { planId, mealName, targetCalories, selectedFoods, goal, dietType } = req.body as {
+      planId: string;
+      mealName: string;
+      targetCalories: number;
+      selectedFoods: string[];
+      goal: string;
+      dietType: string;
+    };
+
+    if (!planId || !mealName || !targetCalories || !selectedFoods || !goal || !dietType) {
+      res.status(400).json({ error: "planId, mealName, targetCalories, selectedFoods, goal, and dietType are required" });
+      return;
+    }
+
+    const plan = await DietPlan.findById(planId);
+    if (!plan) {
+      res.status(404).json({ error: "Plan not found" });
+      return;
+    }
+
+    const alternatives = await geminiSwapMeal({
+      mealName,
+      targetCalories,
+      selectedFoods,
+      dietType,
+      goal,
+    });
+
+    res.json({ alternatives });
+  } catch (err) {
+    console.error("swapMeal error:", err);
+    res.status(500).json({ error: "Failed to generate meal alternatives" });
+  }
+};
+
+// ─── GET /api/plans/:planId/grocery-list ──────────────────────────────────────
+// Pure math — no Gemini call. Aggregates 7 days × 5 meals from weeklyPlan.
+// Returns items grouped by category with 10% buffer applied.
+
+export const groceryList = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { planId } = req.params;
+
+    const plan = await DietPlan.findById(planId).lean();
+    if (!plan) {
+      res.status(404).json({ error: "Plan not found" });
+      return;
+    }
+
+    if (!plan.weeklyPlan || plan.weeklyPlan.length === 0) {
+      res.status(400).json({
+        error: "Weekly plan not generated yet. Generate it first via POST /api/plans/generate-weekly.",
+      });
+      return;
+    }
+
+    const categories = buildGroceryList(plan.weeklyPlan);
+    res.json({ categories });
+  } catch (err) {
+    console.error("groceryList error:", err);
+    res.status(500).json({ error: "Failed to build grocery list" });
   }
 };

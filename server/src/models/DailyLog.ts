@@ -45,6 +45,8 @@ export interface IDailyLog extends Document {
   date: string;           // "YYYY-MM-DD" — never Date object
   meals: IMeal[];
   dayTotals: IDayTotals;
+  waterMl: number;        // total consumed today in ml
+  waterGoalMl: number;    // target for the day, set on log creation from user's weight
   createdAt: Date;
   updatedAt: Date;
 }
@@ -102,6 +104,8 @@ const DailyLogSchema = new Schema<IDailyLog>(
       plannedFat:      { type: Number, required: true },
       actualFat:       { type: Number, required: true },
     },
+    waterMl:     { type: Number, default: 0 },
+    waterGoalMl: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

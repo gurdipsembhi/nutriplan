@@ -6,6 +6,7 @@ interface Props {
   loading: boolean;
   onCheckIn: (mealName: string) => void;
   onLogActual: (mealName: string, actual: MealPlanned) => void;
+  onSwap: (mealName: string) => void;
 }
 
 const MEAL_ICONS: Record<string, string> = {
@@ -16,7 +17,7 @@ const MEAL_ICONS: Record<string, string> = {
   "Dinner":             "🌙",
 };
 
-export default function MealCard({ meal, loading, onCheckIn, onLogActual }: Props) {
+export default function MealCard({ meal, loading, onCheckIn, onLogActual, onSwap }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [calories, setCalories] = useState(meal.planned.totalCalories.toString());
   const [protein,  setProtein]  = useState(meal.planned.protein.toString());
@@ -105,6 +106,14 @@ export default function MealCard({ meal, loading, onCheckIn, onLogActual }: Prop
                        hover:bg-white/10 disabled:opacity-50 transition-colors"
           >
             Log actual
+          </button>
+          <button
+            onClick={() => onSwap(meal.mealName)}
+            disabled={loading}
+            className="flex-1 py-2 rounded-xl bg-white/5 text-white/60 text-xs font-medium
+                       hover:bg-white/10 disabled:opacity-50 transition-colors"
+          >
+            Swap
           </button>
         </div>
       )}

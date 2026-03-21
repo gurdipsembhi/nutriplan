@@ -9,6 +9,8 @@ import GeneratingView from "./components/GeneratingView";
 import DietPlanView from "./components/DietPlanView";
 import DailyLogView from "./components/DailyLogView";
 import WeeklyPlanView from "./components/WeeklyPlanView";
+import GroceryListView from "./components/GroceryListView";
+import WeightLogView from "./components/WeightTracker/WeightLogView";
 
 // Stable device-scoped userId — persisted in localStorage until auth is added
 function getOrCreateUserId(): string {
@@ -24,8 +26,10 @@ const USER_ID = getOrCreateUserId();
 
 export default function App() {
   const { state, setDietType, setFoods, setProfile, setGoalAndGenerate, reset, goBack } = useDietPlan();
-  const [showLog,    setShowLog]    = useState(false);
-  const [showWeekly, setShowWeekly] = useState(false);
+  const [showLog,     setShowLog]     = useState(false);
+  const [showWeekly,  setShowWeekly]  = useState(false);
+  const [showGrocery, setShowGrocery] = useState(false);
+  const [showWeight,  setShowWeight]  = useState(false);
 
   // Show daily log view
   if (
@@ -41,6 +45,10 @@ export default function App() {
         userId={USER_ID}
         targetCalories={state.targetCalories}
         macros={state.macros}
+        selectedFoods={state.selectedFoods}
+        goal={state.goal!}
+        dietType={state.dietType!}
+        weightKg={state.profile!.weight}
         onBack={() => setShowLog(false)}
       />
     );
@@ -63,6 +71,30 @@ export default function App() {
         dietType={state.dietType}
         goal={state.goal}
         onBack={() => setShowWeekly(false)}
+        onGroceryList={() => { setShowWeekly(false); setShowGrocery(true); }}
+      />
+    );
+  }
+
+  // Show weight tracker view
+  if (showWeight && state.step === "done" && state.planId && state.profile) {
+    return (
+      <WeightLogView
+        userId={USER_ID}
+        planId={state.planId}
+        originalWeight={state.profile.weight}
+        onBack={() => setShowWeight(false)}
+        onRecalculate={() => { setShowWeight(false); reset(); }}
+      />
+    );
+  }
+
+  // Show grocery list view
+  if (showGrocery && state.step === "done" && state.planId) {
+    return (
+      <GroceryListView
+        planId={state.planId}
+        onBack={() => { setShowGrocery(false); setShowWeekly(true); }}
       />
     );
   }
@@ -96,6 +128,7 @@ export default function App() {
             onReset={reset}
             onTrack={() => setShowLog(true)}
             onWeeklyPlan={() => setShowWeekly(true)}
+            onWeightTracker={() => setShowWeight(true)}
           />
         )}
       </main>

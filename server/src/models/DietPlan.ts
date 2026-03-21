@@ -48,6 +48,7 @@ export interface IDietPlan extends Document {
   };
   generatedPlan: string;
   weeklyPlan: IWeeklyDay[];       // populated by Feature 1.2; empty array until generated
+  isStale: boolean;               // true when |latestWeight - profile.weight| >= 3kg
   createdAt: Date;
   updatedAt: Date;
 }
@@ -114,6 +115,7 @@ const DietPlanSchema = new Schema<IDietPlan>(
     },
     generatedPlan: { type: String, required: true },
     weeklyPlan:    { type: [WeeklyDaySchema], default: [] },
+    isStale:       { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -178,3 +178,63 @@ Return JSON with this schema:
     }
   }
 }
+
+// ─── Call 4: Meal Swap ────────────────────────────────────────────────────────
+
+export interface SwapMealParams {
+  mealName: string;
+  targetCalories: number;
+  selectedFoods: string[];
+  dietType: string;
+  goal: string;
+}
+
+export interface SwapMealFood {
+  name: string;
+  grams: number;
+  calories: number;
+}
+
+export interface SwapMealOption {
+  foods: SwapMealFood[];
+  totalCalories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export async function swapMeal(
+  params: SwapMealParams
+): Promise<SwapMealOption[]> {
+  const prompt = `You are a nutritionist. Suggest 2 alternative meals.
+
+Each meal must:
+- Use ONLY foods from this list: ${params.selectedFoods.join(", ")}
+- Be within ±100 kcal of target: ${params.targetCalories} kcal
+- Be meaningfully different from each other
+- Match diet type: ${params.dietType}
+
+Return a JSON array of exactly 2 meal objects:
+[{ "foods": [{ "name": string, "grams": number, "calories": number }], "totalCalories": number, "protein": number, "carbs": number, "fat": number }]`;
+
+  async function attempt(): Promise<SwapMealOption[]> {
+    const result = await getJsonModel().generateContent(prompt);
+    const parsed = JSON.parse(result.response.text()) as SwapMealOption[];
+    if (!Array.isArray(parsed) || parsed.length !== 2) {
+      throw new Error("Gemini did not return exactly 2 alternatives");
+    }
+    return parsed;
+  }
+
+  try {
+    return await attempt();
+  } catch (error) {
+    console.error("Gemini swapMeal first attempt failed, retrying:", error);
+    try {
+      return await attempt();
+    } catch (retryError) {
+      console.error("Gemini swapMeal failed after retry:", retryError);
+      throw retryError;
+    }
+  }
+}
