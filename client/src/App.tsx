@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useDietPlan } from "./hooks/useDietPlan";
 import NavBar from "./components/NavBar";
 import StepDietType from "./components/steps/StepDietType";
@@ -6,9 +7,65 @@ import StepProfile from "./components/steps/StepProfile";
 import StepGoal from "./components/steps/StepGoal";
 import GeneratingView from "./components/GeneratingView";
 import DietPlanView from "./components/DietPlanView";
+import DailyLogView from "./components/DailyLogView";
+import WeeklyPlanView from "./components/WeeklyPlanView";
+
+// Stable device-scoped userId — persisted in localStorage until auth is added
+function getOrCreateUserId(): string {
+  const key = "nutriplan_user_id";
+  const existing = localStorage.getItem(key);
+  if (existing) return existing;
+  const id = crypto.randomUUID();
+  localStorage.setItem(key, id);
+  return id;
+}
+
+const USER_ID = getOrCreateUserId();
 
 export default function App() {
   const { state, setDietType, setFoods, setProfile, setGoalAndGenerate, reset, goBack } = useDietPlan();
+  const [showLog,    setShowLog]    = useState(false);
+  const [showWeekly, setShowWeekly] = useState(false);
+
+  // Show daily log view
+  if (
+    showLog &&
+    state.step === "done" &&
+    state.planId &&
+    state.macros &&
+    state.targetCalories
+  ) {
+    return (
+      <DailyLogView
+        planId={state.planId}
+        userId={USER_ID}
+        targetCalories={state.targetCalories}
+        macros={state.macros}
+        onBack={() => setShowLog(false)}
+      />
+    );
+  }
+
+  // Show weekly plan view
+  if (
+    showWeekly &&
+    state.step === "done" &&
+    state.planId &&
+    state.dietType &&
+    state.goal &&
+    state.targetCalories
+  ) {
+    return (
+      <WeeklyPlanView
+        planId={state.planId}
+        selectedFoods={state.selectedFoods}
+        targetCalories={state.targetCalories}
+        dietType={state.dietType}
+        goal={state.goal}
+        onBack={() => setShowWeekly(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-slate-100">
@@ -37,6 +94,8 @@ export default function App() {
             macros={state.macros}
             targetCalories={state.targetCalories}
             onReset={reset}
+            onTrack={() => setShowLog(true)}
+            onWeeklyPlan={() => setShowWeekly(true)}
           />
         )}
       </main>

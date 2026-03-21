@@ -34,6 +34,7 @@ export interface DietPlanState {
   targetCalories: number | null;
   macros: Macros | null;
   plan: string | null;
+  planId: string | null;
   error: string | null;
 }
 
@@ -42,4 +43,72 @@ export interface GeneratePlanResponse {
   plan: string;
   targetCalories: number;
   macros: Macros;
+}
+
+export interface MealFood {
+  name: string;
+  grams: number;
+  calories: number;
+}
+
+export interface MealPlanned {
+  foods: MealFood[];
+  totalCalories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export interface Meal {
+  mealName: string;
+  planned: MealPlanned;
+  actual: MealPlanned | null;
+  checkedOff: boolean;
+  loggedAt: string | null;
+}
+
+export interface DayTotals {
+  plannedCalories: number;
+  actualCalories: number;
+  plannedProtein: number;
+  actualProtein: number;
+  plannedCarbs: number;
+  actualCarbs: number;
+  plannedFat: number;
+  actualFat: number;
+}
+
+export interface DailyLog {
+  _id: string;
+  userId: string;
+  planId: string;
+  date: string;
+  meals: Meal[];
+  dayTotals: DayTotals;
+}
+
+export interface WeeklyMealFood {
+  name: string;
+  grams: number;
+  calories: number;
+}
+
+export interface WeeklyMeal {
+  name: string;
+  foods: WeeklyMealFood[];
+  totalCalories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export interface WeeklyDay {
+  day: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+  meals: WeeklyMeal[];
+  dayTotal: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
 }

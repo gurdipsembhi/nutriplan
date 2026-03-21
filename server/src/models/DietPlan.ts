@@ -1,5 +1,35 @@
 import mongoose, { Schema, Document } from "mongoose";
 
+// ─── Weekly Plan types ───────────────────────────────────────────────────────
+
+export interface IWeeklyMealFood {
+  name: string;
+  grams: number;
+  calories: number;
+}
+
+export interface IWeeklyMeal {
+  name: string;
+  foods: IWeeklyMealFood[];
+  totalCalories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export interface IWeeklyDay {
+  day: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+  meals: IWeeklyMeal[];
+  dayTotal: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+}
+
+// ─── DietPlan document ───────────────────────────────────────────────────────
+
 export interface IDietPlan extends Document {
   profile: {
     height: number;
@@ -17,8 +47,53 @@ export interface IDietPlan extends Document {
     fat: number;
   };
   generatedPlan: string;
+  weeklyPlan: IWeeklyDay[];       // populated by Feature 1.2; empty array until generated
   createdAt: Date;
+  updatedAt: Date;
 }
+
+// ─── Sub-schemas ─────────────────────────────────────────────────────────────
+
+const WeeklyMealFoodSchema = new Schema<IWeeklyMealFood>(
+  {
+    name:     { type: String, required: true },
+    grams:    { type: Number, required: true },
+    calories: { type: Number, required: true },
+  },
+  { _id: false }
+);
+
+const WeeklyMealSchema = new Schema<IWeeklyMeal>(
+  {
+    name:          { type: String, required: true },
+    foods:         { type: [WeeklyMealFoodSchema], default: [] },
+    totalCalories: { type: Number, required: true },
+    protein:       { type: Number, required: true },
+    carbs:         { type: Number, required: true },
+    fat:           { type: Number, required: true },
+  },
+  { _id: false }
+);
+
+const WeeklyDaySchema = new Schema<IWeeklyDay>(
+  {
+    day: {
+      type: String,
+      enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      required: true,
+    },
+    meals: { type: [WeeklyMealSchema], required: true },
+    dayTotal: {
+      calories: { type: Number, required: true },
+      protein:  { type: Number, required: true },
+      carbs:    { type: Number, required: true },
+      fat:      { type: Number, required: true },
+    },
+  },
+  { _id: false }
+);
+
+// ─── Main schema ─────────────────────────────────────────────────────────────
 
 const DietPlanSchema = new Schema<IDietPlan>(
   {
@@ -38,6 +113,7 @@ const DietPlanSchema = new Schema<IDietPlan>(
       fat:     Number,
     },
     generatedPlan: { type: String, required: true },
+    weeklyPlan:    { type: [WeeklyDaySchema], default: [] },
   },
   { timestamps: true }
 );

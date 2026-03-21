@@ -11,6 +11,7 @@ const initialState: DietPlanState = {
   targetCalories: null,
   macros: null,
   plan: null,
+  planId: null,
   error: null,
 };
 
@@ -49,6 +50,7 @@ export function useDietPlan() {
           targetCalories: result.targetCalories,
           macros: result.macros,
           plan: result.plan,
+          planId: result.id,
         }));
       } catch (err) {
         setState((s) => ({

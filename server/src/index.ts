@@ -4,10 +4,11 @@ import dotenv from "dotenv";
 import connectDB from "./config/db";
 import foodsRouter from "./routes/foods";
 import plansRouter from "./routes/plans";
+import logsRouter  from "./routes/logs";
 
 dotenv.config();
 
-const required = ["MONGODB_URI", "OPENAI_API_KEY", "CLIENT_URL"];
+const required = ["MONGODB_URI", "GEMINI_API_KEY", "CLIENT_URL"];
 required.forEach((key) => {
   if (!process.env[key]) {
     console.error(`Missing env var: ${key}`);
@@ -29,6 +30,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/foods", foodsRouter);
 app.use("/api/plans", plansRouter);
+app.use("/api/logs",  logsRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

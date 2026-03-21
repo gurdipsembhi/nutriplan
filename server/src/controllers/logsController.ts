@@ -1,0 +1,214 @@
+import { Request, Response } from "express";
+import DailyLog, { IMeal, IDayTotals } from "../models/DailyLog";
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function getTodayString(): string {
+  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+
+function recalcDayTotals(meals: IMeal[]): IDayTotals {
+  let plannedCalories = 0, actualCalories = 0;
+  let plannedProtein = 0,  actualProtein = 0;
+  let plannedCarbs = 0,    actualCarbs = 0;
+  let plannedFat = 0,      actualFat = 0;
+
+  for (const meal of meals) {
+    plannedCalories += meal.planned.totalCalories;
+    plannedProtein  += meal.planned.protein;
+    plannedCarbs    += meal.planned.carbs;
+    plannedFat      += meal.planned.fat;
+
+    // actual defaults to planned when checked off without editing
+    const src = meal.actual ?? meal.planned;
+    if (meal.checkedOff) {
+      actualCalories += src.totalCalories;
+      actualProtein  += src.protein;
+      actualCarbs    += src.carbs;
+      actualFat      += src.fat;
+    }
+  }
+
+  return {
+    plannedCalories, actualCalories,
+    plannedProtein,  actualProtein,
+    plannedCarbs,    actualCarbs,
+    plannedFat,      actualFat,
+  };
+}
+
+// ─── POST /api/logs/checkin ─────────────────────────────────────────────────
+// Body: { userId, planId, date, mealName }
+// Marks a meal as checked off. actual defaults to planned values.
+
+export async function checkIn(req: Request, res: Response): Promise<void> {
+  try {
+    const { userId, planId, date, mealName } = req.body as {
+      userId: string;
+      planId: string;
+      date: string;
+      mealName: string;
+    };
+
+    if (!userId || !planId || !date || !mealName) {
+      res.status(400).json({ error: "userId, planId, date, and mealName are required" });
+      return;
+    }
+
+    let log = await DailyLog.findOne({ userId, date });
+
+    if (!log) {
+      res.status(404).json({ error: "No log found for this date. Create one via /api/logs/log-meal first." });
+      return;
+    }
+
+    const meal = log.meals.find((m) => m.mealName === mealName);
+    if (!meal) {
+      res.status(404).json({ error: `Meal "${mealName}" not found in log` });
+      return;
+    }
+
+    // actual defaults to planned when checking off without portion edits
+    if (!meal.actual) {
+      meal.actual = {
+        foods:         meal.planned.foods,
+        totalCalories: meal.planned.totalCalories,
+        protein:       meal.planned.protein,
+        carbs:         meal.planned.carbs,
+        fat:           meal.planned.fat,
+      };
+    }
+
+    meal.checkedOff = true;
+    meal.loggedAt   = new Date();
+    log.dayTotals   = recalcDayTotals(log.meals);
+
+    await log.save();
+    res.json({ log });
+  } catch (err) {
+    console.error("checkIn error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
+// ─── POST /api/logs/log-meal ────────────────────────────────────────────────
+// Body: { userId, planId, date, mealName, actual }
+// Logs actual portions. Creates the daily log doc if it doesn't exist yet.
+// If this is the first meal being logged, `meals` must be provided to seed the log.
+
+export async function logMeal(req: Request, res: Response): Promise<void> {
+  try {
+    const { userId, planId, date, mealName, actual, meals: seedMeals } = req.body as {
+      userId: string;
+      planId: string;
+      date: string;
+      mealName: string;
+      actual: {
+        foods: { name: string; grams: number; calories: number }[];
+        totalCalories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+      };
+      meals?: IMeal[];
+    };
+
+    if (!userId || !planId || !date || !mealName || !actual) {
+      res.status(400).json({ error: "userId, planId, date, mealName, and actual are required" });
+      return;
+    }
+
+    let log = await DailyLog.findOne({ userId, date });
+
+    if (!log) {
+      // First meal log of the day — seed all 5 planned meals from request
+      if (!seedMeals || seedMeals.length === 0) {
+        res.status(400).json({
+          error: "No log exists for this date. Provide `meals` array to initialise the daily log.",
+        });
+        return;
+      }
+
+      const dayTotals = recalcDayTotals(seedMeals);
+      log = new DailyLog({ userId, planId, date, meals: seedMeals, dayTotals });
+    }
+
+    const meal = log.meals.find((m) => m.mealName === mealName);
+    if (!meal) {
+      res.status(404).json({ error: `Meal "${mealName}" not found in log` });
+      return;
+    }
+
+    meal.actual     = actual;
+    meal.checkedOff = true;
+    meal.loggedAt   = new Date();
+    log.dayTotals   = recalcDayTotals(log.meals);
+
+    await log.save();
+    res.json({ log });
+  } catch (err) {
+    console.error("logMeal error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
+// ─── GET /api/logs/today ────────────────────────────────────────────────────
+// Query: ?userId=xxx
+// Returns today's log for the user, or 404 if none exists yet.
+
+export async function getTodayLog(req: Request, res: Response): Promise<void> {
+  try {
+    const { userId } = req.query as { userId: string };
+
+    if (!userId) {
+      res.status(400).json({ error: "userId query param is required" });
+      return;
+    }
+
+    const today = getTodayString();
+    const log   = await DailyLog.findOne({ userId, date: today });
+
+    if (!log) {
+      res.status(404).json({ error: "No log found for today" });
+      return;
+    }
+
+    res.json({ log });
+  } catch (err) {
+    console.error("getTodayLog error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
+// ─── GET /api/logs/:date ────────────────────────────────────────────────────
+// Params: date = "YYYY-MM-DD"
+// Query:  ?userId=xxx
+
+export async function getLogByDate(req: Request, res: Response): Promise<void> {
+  try {
+    const { date } = req.params;
+    const { userId } = req.query as { userId: string };
+
+    if (!userId) {
+      res.status(400).json({ error: "userId query param is required" });
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      res.status(400).json({ error: "date must be in YYYY-MM-DD format" });
+      return;
+    }
+
+    const log = await DailyLog.findOne({ userId, date });
+
+    if (!log) {
+      res.status(404).json({ error: `No log found for ${date}` });
+      return;
+    }
+
+    res.json({ log });
+  } catch (err) {
+    console.error("getLogByDate error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
