@@ -5,12 +5,13 @@ import {
   getAllReports,
   getReportByWeek,
 } from "../controllers/reportsController";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
-router.post("/weekly/generate",  generateReport);
-router.get("/weekly/latest",     getLatestReport);  // before /:weekStart to avoid conflict
-router.get("/weekly",            getAllReports);
-router.get("/weekly/:weekStart", getReportByWeek);
+router.post("/weekly/generate",  requireAuth, generateReport);
+router.get("/weekly/latest",     requireAuth, getLatestReport);  // before /:weekStart to avoid conflict
+router.get("/weekly",            requireAuth, getAllReports);
+router.get("/weekly/:weekStart", requireAuth, getReportByWeek);
 
 export default router;

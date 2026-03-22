@@ -40,20 +40,20 @@ function recalcDayTotals(meals: IMeal[]): IDayTotals {
 }
 
 // ─── POST /api/logs/checkin ─────────────────────────────────────────────────
-// Body: { userId, planId, date, mealName }
+// Body: { planId, date, mealName }
 // Marks a meal as checked off. actual defaults to planned values.
 
 export async function checkIn(req: Request, res: Response): Promise<void> {
   try {
-    const { userId, planId, date, mealName } = req.body as {
-      userId: string;
+    const userId = req.user!._id.toString();
+    const { planId, date, mealName } = req.body as {
       planId: string;
       date: string;
       mealName: string;
     };
 
-    if (!userId || !planId || !date || !mealName) {
-      res.status(400).json({ error: "userId, planId, date, and mealName are required" });
+    if (!planId || !date || !mealName) {
+      res.status(400).json({ error: "planId, date, and mealName are required" });
       return;
     }
 
@@ -99,14 +99,14 @@ export async function checkIn(req: Request, res: Response): Promise<void> {
 }
 
 // ─── POST /api/logs/log-meal ────────────────────────────────────────────────
-// Body: { userId, planId, date, mealName, actual }
+// Body: { planId, date, mealName, actual, meals? }
 // Logs actual portions. Creates the daily log doc if it doesn't exist yet.
 // If this is the first meal being logged, `meals` must be provided to seed the log.
 
 export async function logMeal(req: Request, res: Response): Promise<void> {
   try {
-    const { userId, planId, date, mealName, actual, meals: seedMeals } = req.body as {
-      userId: string;
+    const userId = req.user!._id.toString();
+    const { planId, date, mealName, actual, meals: seedMeals } = req.body as {
       planId: string;
       date: string;
       mealName: string;
@@ -120,8 +120,8 @@ export async function logMeal(req: Request, res: Response): Promise<void> {
       meals?: IMeal[];
     };
 
-    if (!userId || !planId || !date || !mealName || !actual) {
-      res.status(400).json({ error: "userId, planId, date, mealName, and actual are required" });
+    if (!planId || !date || !mealName || !actual) {
+      res.status(400).json({ error: "planId, date, mealName, and actual are required" });
       return;
     }
 
@@ -165,21 +165,21 @@ export async function logMeal(req: Request, res: Response): Promise<void> {
 }
 
 // ─── POST /api/logs/water ───────────────────────────────────────────────────
-// Body: { userId, planId, ml, weightKg? }
+// Body: { planId, ml, weightKg? }
 // Increments waterMl on today's log, clamped to waterGoalMl.
 // Creates the log document if it doesn't exist yet.
 
 export async function addWater(req: Request, res: Response): Promise<void> {
   try {
-    const { userId, planId, ml, weightKg } = req.body as {
-      userId: string;
+    const userId = req.user!._id.toString();
+    const { planId, ml, weightKg } = req.body as {
       planId: string;
       ml: number;
       weightKg?: number;
     };
 
-    if (!userId || !planId || ml == null) {
-      res.status(400).json({ error: "userId, planId, and ml are required" });
+    if (!planId || ml == null) {
+      res.status(400).json({ error: "planId and ml are required" });
       return;
     }
 
@@ -222,15 +222,16 @@ export async function addWater(req: Request, res: Response): Promise<void> {
 }
 
 // ─── GET /api/logs ──────────────────────────────────────────────────────────
-// Query: ?userId=xxx&weekStart=YYYY-MM-DD
+// Query: ?weekStart=YYYY-MM-DD
 // Returns all logs for a user within a week (Mon–Sun).
 
 export async function getWeekLogs(req: Request, res: Response): Promise<void> {
   try {
-    const { userId, weekStart } = req.query as { userId: string; weekStart: string };
+    const userId = req.user!._id.toString();
+    const { weekStart } = req.query as { weekStart: string };
 
-    if (!userId || !weekStart) {
-      res.status(400).json({ error: "userId and weekStart query params are required" });
+    if (!weekStart) {
+      res.status(400).json({ error: "weekStart query param is required" });
       return;
     }
 
@@ -253,20 +254,13 @@ export async function getWeekLogs(req: Request, res: Response): Promise<void> {
 }
 
 // ─── GET /api/logs/today ────────────────────────────────────────────────────
-// Query: ?userId=xxx
 // Returns today's log for the user, or 404 if none exists yet.
 
 export async function getTodayLog(req: Request, res: Response): Promise<void> {
   try {
-    const { userId } = req.query as { userId: string };
-
-    if (!userId) {
-      res.status(400).json({ error: "userId query param is required" });
-      return;
-    }
-
-    const today = getTodayString();
-    const log   = await DailyLog.findOne({ userId, date: today });
+    const userId = req.user!._id.toString();
+    const today  = getTodayString();
+    const log    = await DailyLog.findOne({ userId, date: today });
 
     if (!log) {
       res.status(404).json({ error: "No log found for today" });
@@ -282,17 +276,11 @@ export async function getTodayLog(req: Request, res: Response): Promise<void> {
 
 // ─── GET /api/logs/:date ────────────────────────────────────────────────────
 // Params: date = "YYYY-MM-DD"
-// Query:  ?userId=xxx
 
 export async function getLogByDate(req: Request, res: Response): Promise<void> {
   try {
+    const userId = req.user!._id.toString();
     const { date } = req.params;
-    const { userId } = req.query as { userId: string };
-
-    if (!userId) {
-      res.status(400).json({ error: "userId query param is required" });
-      return;
-    }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       res.status(400).json({ error: "date must be in YYYY-MM-DD format" });

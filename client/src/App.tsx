@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useDietPlan } from "./hooks/useDietPlan";
 import NavBar from "./components/NavBar";
 import StepDietType from "./components/steps/StepDietType";
@@ -13,26 +16,23 @@ import WeeklyPlanView from "./components/WeeklyPlanView";
 import GroceryListView from "./components/GroceryListView";
 import WeightLogView from "./components/WeightTracker/WeightLogView";
 import WeeklyReportView from "./components/WeeklyReport/WeeklyReportView";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import AuthCallback from "./pages/AuthCallback";
+import SettingsPage from "./pages/SettingsPage";
+import { useAuth } from "./context/AuthContext";
 
-// Stable device-scoped userId — persisted in localStorage until auth is added
-function getOrCreateUserId(): string {
-  const key = "nutriplan_user_id";
-  const existing = localStorage.getItem(key);
-  if (existing) return existing;
-  const id = crypto.randomUUID();
-  localStorage.setItem(key, id);
-  return id;
-}
-
-const USER_ID = getOrCreateUserId();
-
-export default function App() {
+function MainApp() {
+  const { user } = useAuth();
   const { state, setDietType, setFoods, setProfile, setGoal, setFastingAndGenerate, reset, goBack } = useDietPlan();
   const [showLog,     setShowLog]     = useState(false);
   const [showWeekly,  setShowWeekly]  = useState(false);
   const [showGrocery, setShowGrocery] = useState(false);
   const [showWeight,  setShowWeight]  = useState(false);
   const [showReport,  setShowReport]  = useState(false);
+
+  // Use the authenticated user's ID
+  const userId = user?._id ?? "";
 
   // Show daily log view
   if (
@@ -45,7 +45,7 @@ export default function App() {
     return (
       <DailyLogView
         planId={state.planId}
-        userId={USER_ID}
+        userId={userId}
         targetCalories={state.targetCalories}
         macros={state.macros}
         selectedFoods={state.selectedFoods}
@@ -83,7 +83,7 @@ export default function App() {
   if (showWeight && state.step === "done" && state.planId && state.profile) {
     return (
       <WeightLogView
-        userId={USER_ID}
+        userId={userId}
         planId={state.planId}
         originalWeight={state.profile.weight}
         onBack={() => setShowWeight(false)}
@@ -101,7 +101,7 @@ export default function App() {
   ) {
     return (
       <WeeklyReportView
-        userId={USER_ID}
+        userId={userId}
         planId={state.planId}
         selectedFoods={state.selectedFoods}
         goal={state.goal}
@@ -162,5 +162,35 @@ export default function App() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <MainApp />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

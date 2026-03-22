@@ -13,21 +13,21 @@ function dateNDaysAgo(n: number): string {
 }
 
 // ─── POST /api/weight ─────────────────────────────────────────────────────────
-// Body: { userId, planId?, weight, date?, note? }
+// Body: { planId?, weight, date?, note? }
 // Upserts one log per user per day. Runs stale plan detection after logging.
 
 export const logWeight = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId, planId, weight, date, note } = req.body as {
-      userId: string;
+    const userId = req.user!._id.toString();
+    const { planId, weight, date, note } = req.body as {
       planId?: string;
       weight: number;
       date?: string;
       note?: string;
     };
 
-    if (!userId || weight == null) {
-      res.status(400).json({ error: "userId and weight are required" });
+    if (weight == null) {
+      res.status(400).json({ error: "weight is required" });
       return;
     }
 
@@ -61,17 +61,13 @@ export const logWeight = async (req: Request, res: Response): Promise<void> => {
 };
 
 // ─── GET /api/weight ──────────────────────────────────────────────────────────
-// Query: { userId, days? }  — defaults to last 90 days
+// Query: { days? }  — defaults to last 90 days
 // Returns logs sorted oldest → newest for chart rendering
 
 export const getWeightHistory = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId, days } = req.query as { userId?: string; days?: string };
-
-    if (!userId) {
-      res.status(400).json({ error: "userId is required" });
-      return;
-    }
+    const userId = req.user!._id.toString();
+    const { days } = req.query as { days?: string };
 
     const lookbackDays = days ? parseInt(days, 10) : 90;
     const cutoff = dateNDaysAgo(lookbackDays);
@@ -91,18 +87,12 @@ export const getWeightHistory = async (req: Request, res: Response): Promise<voi
 };
 
 // ─── GET /api/weight/trend ────────────────────────────────────────────────────
-// Query: { userId }
 // avgWeeklyChange = (latestWeight - weightFrom4WeeksAgo) / weeksSpanned, rounded to 1dp
 // direction: "losing" < -0.1, "gaining" > 0.1, else "stable"
 
 export const getWeightTrend = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId } = req.query as { userId?: string };
-
-    if (!userId) {
-      res.status(400).json({ error: "userId is required" });
-      return;
-    }
+    const userId = req.user!._id.toString();
 
     const logs = await WeightLog.find({ userId })
       .sort({ date: -1 })

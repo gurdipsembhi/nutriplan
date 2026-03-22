@@ -1,5 +1,7 @@
 import type { Macros } from "../types";
 import MacroBar from "./MacroBar";
+import { useAuth } from "../context/AuthContext";
+import { displayWeight, displayHeight } from "../lib/unitConversions";
 
 interface DietPlanViewProps {
   plan: string;
@@ -13,6 +15,11 @@ interface DietPlanViewProps {
 }
 
 export default function DietPlanView({ plan, macros, targetCalories, onReset, onTrack, onWeeklyPlan, onWeightTracker, onWeeklyReport }: DietPlanViewProps) {
+  const { units } = useAuth();
+  // displayWeight and displayHeight are available for use when weight/height props are added
+  void displayWeight;
+  void displayHeight;
+  void units;
   const lines = plan.split("\n");
 
   return (

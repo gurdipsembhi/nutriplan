@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { getAllFoods, lookupFoods } from "../controllers/foodsController";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
-router.get("/", getAllFoods);
-router.post("/lookup", lookupFoods);
+router.get("/",        requireAuth, getAllFoods);
+router.post("/lookup", requireAuth, lookupFoods);
 
 export default router;

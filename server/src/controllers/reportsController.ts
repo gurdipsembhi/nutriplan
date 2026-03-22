@@ -5,19 +5,19 @@ import {
 import WeeklyReport from "../models/WeeklyReport";
 
 // POST /api/reports/weekly/generate
-// Body: { userId, planId, selectedFoods, goal, weekStartDate? }
+// Body: { planId, selectedFoods, goal, weekStartDate? }
 export async function generateReport(req: Request, res: Response): Promise<void> {
   try {
-    const { userId, planId, selectedFoods, goal, weekStartDate } = req.body as {
-      userId: string;
+    const userId = req.user!._id.toString();
+    const { planId, selectedFoods, goal, weekStartDate } = req.body as {
       planId: string;
       selectedFoods: string[];
       goal: string;
       weekStartDate?: string;
     };
 
-    if (!userId || !planId || !Array.isArray(selectedFoods) || !goal) {
-      res.status(400).json({ error: "userId, planId, selectedFoods, and goal are required" });
+    if (!planId || !Array.isArray(selectedFoods) || !goal) {
+      res.status(400).json({ error: "planId, selectedFoods, and goal are required" });
       return;
     }
 
@@ -36,14 +36,10 @@ export async function generateReport(req: Request, res: Response): Promise<void>
   }
 }
 
-// GET /api/reports/weekly/latest?userId=xxx
+// GET /api/reports/weekly/latest
 export async function getLatestReport(req: Request, res: Response): Promise<void> {
   try {
-    const { userId } = req.query as { userId: string };
-    if (!userId) {
-      res.status(400).json({ error: "userId query param is required" });
-      return;
-    }
+    const userId = req.user!._id.toString();
 
     const report = await WeeklyReport.findOne({ userId })
       .sort({ weekStartDate: -1 })
@@ -56,14 +52,10 @@ export async function getLatestReport(req: Request, res: Response): Promise<void
   }
 }
 
-// GET /api/reports/weekly?userId=xxx
+// GET /api/reports/weekly
 export async function getAllReports(req: Request, res: Response): Promise<void> {
   try {
-    const { userId } = req.query as { userId: string };
-    if (!userId) {
-      res.status(400).json({ error: "userId query param is required" });
-      return;
-    }
+    const userId = req.user!._id.toString();
 
     const reports = await WeeklyReport.find({ userId })
       .sort({ weekStartDate: -1 })
@@ -76,16 +68,11 @@ export async function getAllReports(req: Request, res: Response): Promise<void> 
   }
 }
 
-// GET /api/reports/weekly/:weekStart?userId=xxx
+// GET /api/reports/weekly/:weekStart
 export async function getReportByWeek(req: Request, res: Response): Promise<void> {
   try {
+    const userId = req.user!._id.toString();
     const { weekStart } = req.params as { weekStart: string };
-    const { userId } = req.query as { userId: string };
-
-    if (!userId) {
-      res.status(400).json({ error: "userId query param is required" });
-      return;
-    }
 
     const report = await WeeklyReport.findOne({ userId, weekStartDate: weekStart }).lean();
 
