@@ -39,6 +39,7 @@ export interface IEatingWindow {
 }
 
 export interface IDietPlan extends Document {
+  userId: string;
   profile: {
     height: number;
     weight: number;
@@ -108,6 +109,7 @@ const WeeklyDaySchema = new Schema<IWeeklyDay>(
 
 const DietPlanSchema = new Schema<IDietPlan>(
   {
+    userId:  { type: String, required: true },
     profile: {
       height: { type: Number, required: true },
       weight: { type: Number, required: true },

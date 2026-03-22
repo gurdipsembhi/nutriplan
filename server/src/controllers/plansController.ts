@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { IUser } from "../models/User";
 import Food from "../models/Food";
 import DietPlan from "../models/DietPlan";
 import { generateDietPlan, generateWeeklyPlan as geminiGenerateWeeklyPlan, swapMeal as geminiSwapMeal, generateRecipe as geminiGenerateRecipe } from "../services/geminiService";
@@ -66,7 +67,10 @@ export const generatePlan = async (req: Request, res: Response): Promise<void> =
       eatingWindow,
     });
 
+    const userId = (req.user as IUser)._id.toString();
+
     const savedPlan = await DietPlan.create({
+      userId,
       profile,
       dietType,
       goal,
@@ -111,7 +115,8 @@ export const generateWeeklyPlan = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    const plan = await DietPlan.findById(planId);
+    const userId = (req.user as IUser)._id.toString();
+    const plan = await DietPlan.findOne({ _id: planId, userId });
     if (!plan) {
       res.status(404).json({ error: "Plan not found" });
       return;
@@ -154,7 +159,8 @@ export const swapMeal = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const plan = await DietPlan.findById(planId);
+    const userId = (req.user as IUser)._id.toString();
+    const plan = await DietPlan.findOne({ _id: planId, userId });
     if (!plan) {
       res.status(404).json({ error: "Plan not found" });
       return;
@@ -207,7 +213,8 @@ export const groceryList = async (req: Request, res: Response): Promise<void> =>
   try {
     const { planId } = req.params;
 
-    const plan = await DietPlan.findById(planId).lean();
+    const userId = (req.user as IUser)._id.toString();
+    const plan = await DietPlan.findOne({ _id: planId, userId }).lean();
     if (!plan) {
       res.status(404).json({ error: "Plan not found" });
       return;

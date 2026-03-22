@@ -57,6 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
     setUser(null);
+    // // Revoke Google session so next login shows account picker
+    // window.location.href = "https://accounts.google.com/logout";
   }
 
   async function updateUnits(units: "metric" | "imperial") {
