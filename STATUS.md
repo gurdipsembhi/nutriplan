@@ -11,14 +11,14 @@ Last updated: [date]
 - Feature 1.5 — Weight Progress Tracker
 - Feature 1.6 is fully complete. Here's what was written:
 - Feature 2.1 — Weekly Muscle Report ← FLAGSHIP
+- Feature 2.2 — Streak & Compliance Score
+- Feature 2.3 — Recipe Mode
 
 ## 🔄 In Progress
 - 
 
 ## ⏳ Queue
 
-- Feature 2.2 — Streak & Compliance Score
-- Feature 2.3 — Recipe Mode
 - Feature 2.4 — Fasting Mode
 - Feature 3.1 — Photo Meal Analysis
 - Feature 3.2 — Lab Report Integration

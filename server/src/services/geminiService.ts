@@ -251,6 +251,94 @@ Return JSON: { "interpretation": string, "recoveryActions": string[] }`;
   }
 }
 
+// ─── Call 6: Recipe Generation ────────────────────────────────────────────────
+
+export interface RecipeMealFood {
+  name: string;
+  grams: number;
+}
+
+export interface RecipeParams {
+  meal: { name: string; foods: RecipeMealFood[] };
+  goal: string;
+}
+
+export interface RecipeResult {
+  title: string;
+  prepTimeMinutes: number;
+  steps: string[];
+  tip: string;
+}
+
+const SNACK_MEALS = new Set(["Mid-Morning Snack", "Evening Snack"]);
+
+export async function generateRecipe(
+  params: RecipeParams
+): Promise<RecipeResult> {
+  const foodList = params.meal.foods
+    .map((f) => `${f.grams}g ${f.name}`)
+    .join(", ");
+
+  const isSnack = SNACK_MEALS.has(params.meal.name);
+  const maxPrepTime = isSnack ? 20 : 35;
+
+  const prompt = `You are a practical home cook. Generate a simple recipe.
+
+Meal: ${params.meal.name}
+
+Ingredients — use EXACTLY these, no additions or substitutions:
+${foodList}
+
+Rules:
+- Maximum 5 preparation steps
+- Each step must be one sentence, action-oriented (start with a verb)
+- Prep time must be under ${maxPrepTime} minutes — be realistic
+- The tip must directly relate to the user's goal: ${params.goal}
+  - fat_loss: focus on satiety, avoiding cooking oils, or portion timing
+  - muscle_gain: focus on protein absorption, eating timing, or pairing
+  - maintenance: focus on balance, variety, or consistency
+
+Return JSON with this exact shape:
+{
+  "title": string,
+  "prepTimeMinutes": number,
+  "steps": string[],
+  "tip": string
+}`;
+
+  async function attempt(): Promise<RecipeResult> {
+    const result = await getJsonModel().generateContent(prompt);
+    const parsed = JSON.parse(result.response.text()) as RecipeResult;
+
+    if (
+      !parsed.title ||
+      typeof parsed.prepTimeMinutes !== "number" ||
+      !Array.isArray(parsed.steps) ||
+      parsed.steps.length === 0 ||
+      !parsed.tip
+    ) {
+      throw new Error("Gemini recipe response missing required fields");
+    }
+
+    // Enforce the 5-step cap server-side regardless of what Gemini returns
+    parsed.steps = parsed.steps.slice(0, 5);
+
+    return parsed;
+  }
+
+  try {
+    return await attempt();
+  } catch (error) {
+    console.error("Gemini generateRecipe first attempt failed, retrying:", error);
+    try {
+      return await attempt();
+    } catch (retryError) {
+      console.error("Gemini generateRecipe failed after retry:", retryError);
+      throw retryError;
+    }
+  }
+}
+
 // ─── Call 5: Meal Swap ────────────────────────────────────────────────────────
 
 export interface SwapMealParams {

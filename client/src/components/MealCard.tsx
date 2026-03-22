@@ -7,6 +7,7 @@ interface Props {
   onCheckIn: (mealName: string) => void;
   onLogActual: (mealName: string, actual: MealPlanned) => void;
   onSwap: (mealName: string) => void;
+  onRecipe: (mealName: string) => void;
 }
 
 const MEAL_ICONS: Record<string, string> = {
@@ -17,7 +18,7 @@ const MEAL_ICONS: Record<string, string> = {
   "Dinner":             "🌙",
 };
 
-export default function MealCard({ meal, loading, onCheckIn, onLogActual, onSwap }: Props) {
+export default function MealCard({ meal, loading, onCheckIn, onLogActual, onSwap, onRecipe }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [calories, setCalories] = useState(meal.planned.totalCalories.toString());
   const [protein,  setProtein]  = useState(meal.planned.protein.toString());
@@ -90,31 +91,43 @@ export default function MealCard({ meal, loading, onCheckIn, onLogActual, onSwap
 
       {/* Action buttons — only shown when not yet logged */}
       {!isLogged && !showForm && (
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 space-y-2">
+          {/* Primary action */}
           <button
             onClick={() => onCheckIn(meal.mealName)}
             disabled={loading}
-            className="flex-1 py-2 rounded-xl bg-emerald-600/20 text-emerald-400 text-xs font-medium
+            className="w-full py-2 rounded-xl bg-emerald-600/20 text-emerald-400 text-xs font-medium
                        hover:bg-emerald-600/30 disabled:opacity-50 transition-colors"
           >
             {loading ? "Saving…" : "Check off"}
           </button>
-          <button
-            onClick={() => setShowForm(true)}
-            disabled={loading}
-            className="flex-1 py-2 rounded-xl bg-white/5 text-white/60 text-xs font-medium
-                       hover:bg-white/10 disabled:opacity-50 transition-colors"
-          >
-            Log actual
-          </button>
-          <button
-            onClick={() => onSwap(meal.mealName)}
-            disabled={loading}
-            className="flex-1 py-2 rounded-xl bg-white/5 text-white/60 text-xs font-medium
-                       hover:bg-white/10 disabled:opacity-50 transition-colors"
-          >
-            Swap
-          </button>
+          {/* Secondary actions */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowForm(true)}
+              disabled={loading}
+              className="flex-1 py-2 rounded-xl bg-white/5 text-white/60 text-xs font-medium
+                         hover:bg-white/10 disabled:opacity-50 transition-colors"
+            >
+              Log actual
+            </button>
+            <button
+              onClick={() => onSwap(meal.mealName)}
+              disabled={loading}
+              className="flex-1 py-2 rounded-xl bg-white/5 text-white/60 text-xs font-medium
+                         hover:bg-white/10 disabled:opacity-50 transition-colors"
+            >
+              Swap
+            </button>
+            <button
+              onClick={() => onRecipe(meal.mealName)}
+              disabled={loading}
+              className="flex-1 py-2 rounded-xl bg-white/5 text-white/60 text-xs font-medium
+                         hover:bg-white/10 disabled:opacity-50 transition-colors"
+            >
+              Recipe
+            </button>
+          </div>
         </div>
       )}
 

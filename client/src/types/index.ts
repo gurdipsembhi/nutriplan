@@ -188,6 +188,18 @@ export interface WeeklyReport {
   createdAt: string;
 }
 
+export interface RecipeMealFood {
+  name: string;
+  grams: number;
+}
+
+export interface Recipe {
+  title: string;
+  prepTimeMinutes: number;
+  steps: string[];
+  tip: string;
+}
+
 export interface WeeklyDay {
   day: "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
   meals: WeeklyMeal[];

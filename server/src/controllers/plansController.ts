@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import Food from "../models/Food";
 import DietPlan from "../models/DietPlan";
-import { generateDietPlan, generateWeeklyPlan as geminiGenerateWeeklyPlan, swapMeal as geminiSwapMeal } from "../services/geminiService";
+import { generateDietPlan, generateWeeklyPlan as geminiGenerateWeeklyPlan, swapMeal as geminiSwapMeal, generateRecipe as geminiGenerateRecipe } from "../services/geminiService";
+import type { RecipeMealFood } from "../services/geminiService";
 import { buildGroceryList } from "../services/groceryService";
 import { calcBMR, calcTDEE, goalCalories, calcMacros } from "../utils/calculations";
 
@@ -151,6 +152,30 @@ export const swapMeal = async (req: Request, res: Response): Promise<void> => {
   } catch (err) {
     console.error("swapMeal error:", err);
     res.status(500).json({ error: "Failed to generate meal alternatives" });
+  }
+};
+
+// ─── POST /api/plans/recipe ───────────────────────────────────────────────────
+// Body: { meal: { name, foods: [{name, grams}] }, goal }
+// Response: { recipe: { title, prepTimeMinutes, steps, tip } }
+
+export const recipe = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { meal, goal } = req.body as {
+      meal: { name: string; foods: RecipeMealFood[] };
+      goal: string;
+    };
+
+    if (!meal?.name || !Array.isArray(meal?.foods) || meal.foods.length === 0 || !goal) {
+      res.status(400).json({ error: "meal (name + foods) and goal are required" });
+      return;
+    }
+
+    const result = await geminiGenerateRecipe({ meal, goal });
+    res.json({ recipe: result });
+  } catch (err) {
+    console.error("recipe error:", err);
+    res.status(500).json({ error: "Failed to generate recipe" });
   }
 };
 

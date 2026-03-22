@@ -1,4 +1,4 @@
-import type { FoodItem, GeneratePlanResponse, DietType, Goal, UserProfile, DailyLog, Meal, MealPlanned, WeeklyDay, SwapMealOption, GroceryCategory, WeightLog, WeightTrend, WeeklyReport } from "../types";
+import type { FoodItem, GeneratePlanResponse, DietType, Goal, UserProfile, DailyLog, Meal, MealPlanned, WeeklyDay, SwapMealOption, GroceryCategory, WeightLog, WeightTrend, WeeklyReport, Recipe, RecipeMealFood } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
 
@@ -178,6 +178,19 @@ export async function getLatestWeeklyReport(
     `${BASE_URL}/api/reports/weekly/latest?userId=${encodeURIComponent(userId)}`
   );
   if (!res.ok) throw new Error("Failed to fetch weekly report");
+  return res.json();
+}
+
+export async function getRecipe(params: {
+  meal: { name: string; foods: RecipeMealFood[] };
+  goal: string;
+}): Promise<{ recipe: Recipe }> {
+  const res = await fetch(`${BASE_URL}/api/plans/recipe`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error("Failed to generate recipe");
   return res.json();
 }
 

@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
-import type { DailyLog, Meal, MealPlanned, Macros, SwapMealOption, DietType, Goal } from "../types";
-import { getTodayLog, checkInMeal, logMealActual, swapMeal, addWater, getWeekLogs } from "../lib/api";
+import type { DailyLog, Meal, MealPlanned, Macros, SwapMealOption, DietType, Goal, Recipe } from "../types";
+import { getTodayLog, checkInMeal, logMealActual, swapMeal, addWater, getWeekLogs, getRecipe } from "../lib/api";
 import DayProgressBar from "./DayProgressBar";
 import MealCard from "./MealCard";
 import MealSwapModal from "./MealSwapModal";
 import WaterTracker from "./WaterTracker";
 import StreakBadge from "./StreakBadge";
+import RecipeModal from "./RecipeModal";
 
 interface Props {
   planId: string;
@@ -107,6 +108,12 @@ export default function DailyLogView({
   const [swapOptions,    setSwapOptions]    = useState<SwapMealOption[] | null>(null);
   const [swapLoading,    setSwapLoading]    = useState(false);
   const [swapError,      setSwapError]      = useState<string | null>(null);
+
+  // Recipe state
+  const [recipeMealName, setRecipeMealName] = useState<string | null>(null);
+  const [recipe,         setRecipe]         = useState<Recipe | null>(null);
+  const [recipeLoading,  setRecipeLoading]  = useState(false);
+  const [recipeError,    setRecipeError]    = useState<string | null>(null);
 
   const today = getTodayString();
 
@@ -253,6 +260,35 @@ export default function DailyLogView({
     setSwapMealName(null);
   }
 
+  async function handleRecipe(mealName: string) {
+    const meal = displayMeals.find((m) => m.mealName === mealName);
+    if (!meal) return;
+
+    // Use per-meal food data when available (weekly plan meals).
+    // Fall back to selectedFoods with 100g default when the daily log
+    // was seeded without food-level detail (basic plan view).
+    const foods =
+      meal.planned.foods.length > 0
+        ? meal.planned.foods.map((f) => ({ name: f.name, grams: f.grams }))
+        : selectedFoods.slice(0, 4).map((name) => ({ name, grams: 100 }));
+
+    setRecipeMealName(mealName);
+    setRecipe(null);
+    setRecipeError(null);
+    setRecipeLoading(true);
+    try {
+      const { recipe: result } = await getRecipe({
+        meal: { name: mealName, foods },
+        goal,
+      });
+      setRecipe(result);
+    } catch (e) {
+      setRecipeError(e instanceof Error ? e.message : "Failed to generate recipe");
+    } finally {
+      setRecipeLoading(false);
+    }
+  }
+
   if (init) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
@@ -334,6 +370,7 @@ export default function DailyLogView({
             onCheckIn={handleCheckIn}
             onLogActual={handleLogActual}
             onSwap={handleSwap}
+            onRecipe={handleRecipe}
           />
         ))}
       </div>
@@ -353,6 +390,16 @@ export default function DailyLogView({
           alternatives={swapOptions}
           onSelect={handleSwapSelect}
           onClose={() => { setSwapOptions(null); setSwapMealName(null); }}
+        />
+      )}
+
+      {/* Recipe modal */}
+      {recipeMealName && (
+        <RecipeModal
+          mealName={recipeMealName}
+          recipe={recipeLoading ? null : recipe}
+          error={recipeError}
+          onClose={() => { setRecipeMealName(null); setRecipe(null); setRecipeError(null); }}
         />
       )}
     </div>
