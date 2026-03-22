@@ -6,6 +6,7 @@ import TrendBadge from "./TrendBadge";
 import RegeneratePlanBanner from "./RegeneratePlanBanner";
 import MacroComplianceGrid from "./MacroComplianceGrid";
 import MuscleInsightCard from "./MuscleInsightCard";
+import ComplianceScore from "../ComplianceScore";
 
 interface Props {
   userId:        string;
@@ -159,6 +160,9 @@ export default function WeeklyReportView({
           {report.planShouldRegenerate && (
             <RegeneratePlanBanner onRecalculate={onRecalculate} />
           )}
+
+          {/* Compliance score breakdown */}
+          <ComplianceScore report={report} />
 
           {/* 7-day compliance grid */}
           <MacroComplianceGrid

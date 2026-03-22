@@ -5,6 +5,7 @@ import DayProgressBar from "./DayProgressBar";
 import MealCard from "./MealCard";
 import MealSwapModal from "./MealSwapModal";
 import WaterTracker from "./WaterTracker";
+import StreakBadge from "./StreakBadge";
 
 interface Props {
   planId: string;
@@ -280,6 +281,11 @@ export default function DailyLogView({
           <p className="text-white/40 text-xs">{today}</p>
         </div>
         <span className="text-white/40 text-xs w-12 text-right">{checkedCount}/5</span>
+      </div>
+
+      {/* Streak */}
+      <div className="flex justify-center">
+        <StreakBadge streak={log?.streakDay ?? 0} />
       </div>
 
       {/* Progress summary */}

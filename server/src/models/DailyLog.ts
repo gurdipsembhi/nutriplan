@@ -47,6 +47,7 @@ export interface IDailyLog extends Document {
   dayTotals: IDayTotals;
   waterMl: number;        // total consumed today in ml
   waterGoalMl: number;    // target for the day, set on log creation from user's weight
+  streakDay: number;      // running streak count at the time this log was saved
   createdAt: Date;
   updatedAt: Date;
 }
@@ -106,6 +107,7 @@ const DailyLogSchema = new Schema<IDailyLog>(
     },
     waterMl:     { type: Number, default: 0 },
     waterGoalMl: { type: Number, default: 0 },
+    streakDay:   { type: Number, default: 0 },
   },
   { timestamps: true }
 );

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import DailyLog, { IMeal, IDayTotals } from "../models/DailyLog";
 import { calcDailyWaterGoal } from "../services/waterService";
+import { calcStreak } from "../services/streakService";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -85,7 +86,12 @@ export async function checkIn(req: Request, res: Response): Promise<void> {
     log.dayTotals   = recalcDayTotals(log.meals);
 
     await log.save();
-    res.json({ log });
+
+    const { currentStreak } = await calcStreak(userId);
+    log.streakDay = currentStreak;
+    await log.save();
+
+    res.json({ log, currentStreak });
   } catch (err) {
     console.error("checkIn error:", err);
     res.status(500).json({ error: "Server error" });
@@ -146,7 +152,12 @@ export async function logMeal(req: Request, res: Response): Promise<void> {
     log.dayTotals   = recalcDayTotals(log.meals);
 
     await log.save();
-    res.json({ log });
+
+    const { currentStreak } = await calcStreak(userId);
+    log.streakDay = currentStreak;
+    await log.save();
+
+    res.json({ log, currentStreak });
   } catch (err) {
     console.error("logMeal error:", err);
     res.status(500).json({ error: "Server error" });

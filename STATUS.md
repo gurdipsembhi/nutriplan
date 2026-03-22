@@ -9,13 +9,14 @@ Last updated: [date]
 - Feature 1.3 — Meal Swap
 - Feature 1.4 — Grocery List Generator
 - Feature 1.5 — Weight Progress Tracker
-Feature 1.6 is fully complete. Here's what was written:
+- Feature 1.6 is fully complete. Here's what was written:
+- Feature 2.1 — Weekly Muscle Report ← FLAGSHIP
+
 ## 🔄 In Progress
 - 
 
 ## ⏳ Queue
 
-- Feature 2.1 — Weekly Muscle Report ← FLAGSHIP
 - Feature 2.2 — Streak & Compliance Score
 - Feature 2.3 — Recipe Mode
 - Feature 2.4 — Fasting Mode

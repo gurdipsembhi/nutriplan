@@ -87,6 +87,7 @@ export interface DailyLog {
   dayTotals: DayTotals;
   waterMl: number;
   waterGoalMl: number;
+  streakDay: number;
 }
 
 export interface SwapMealFood {
