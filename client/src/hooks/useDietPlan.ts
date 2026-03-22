@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { DietPlanState, DietType, Goal, UserProfile } from "../types";
+import type { DietPlanState, DietType, Goal, UserProfile, FastingProtocol } from "../types";
 import { lookupFoods, generatePlan } from "../lib/api";
 
 const initialState: DietPlanState = {
@@ -8,6 +8,7 @@ const initialState: DietPlanState = {
   selectedFoods: [],
   profile: null,
   goal: null,
+  fastingProtocol: null,
   targetCalories: null,
   macros: null,
   plan: null,
@@ -30,19 +31,31 @@ export function useDietPlan() {
     setState((s) => ({ ...s, profile, step: 4 }));
   }, []);
 
-  const setGoalAndGenerate = useCallback(
-    async (goal: Goal) => {
-      setState((s) => ({ ...s, goal, step: "generating", error: null }));
+  // Step 4 → 5: save goal, move to fasting step
+  const setGoal = useCallback((goal: Goal) => {
+    setState((s) => ({ ...s, goal, step: 5, error: null }));
+  }, []);
+
+  // Step 5 → generating: save fasting protocol, trigger plan generation
+  const setFastingAndGenerate = useCallback(
+    async (fastingProtocol: FastingProtocol) => {
+      setState((s) => ({ ...s, fastingProtocol, step: "generating", error: null }));
 
       try {
-        const { dietType, selectedFoods, profile } = state;
-        if (!dietType || !profile) throw new Error("Missing state");
+        const { dietType, selectedFoods, profile, goal } = state;
+        if (!dietType || !profile || !goal) throw new Error("Missing state");
 
         // Step 1: lookup/save nutrition
         await lookupFoods(selectedFoods, dietType);
 
-        // Step 2: generate plan
-        const result = await generatePlan({ dietType, foods: selectedFoods, profile, goal });
+        // Step 2: generate plan (fastingProtocol omitted when "none")
+        const result = await generatePlan({
+          dietType,
+          foods: selectedFoods,
+          profile,
+          goal,
+          ...(fastingProtocol !== "none" && { fastingProtocol }),
+        });
 
         setState((s) => ({
           ...s,
@@ -55,7 +68,7 @@ export function useDietPlan() {
       } catch (err) {
         setState((s) => ({
           ...s,
-          step: 4,
+          step: 5,
           error: err instanceof Error ? err.message : "Something went wrong",
         }));
       }
@@ -66,10 +79,10 @@ export function useDietPlan() {
   const reset = useCallback(() => setState(initialState), []);
   const goBack = useCallback(() => {
     setState((s) => {
-      const prev = typeof s.step === "number" && s.step > 1 ? (s.step - 1) as 1 | 2 | 3 | 4 : 1;
-      return { ...s, step: prev };
+      if (typeof s.step !== "number" || s.step <= 1) return s;
+      return { ...s, step: (s.step - 1) as 1 | 2 | 3 | 4 | 5 };
     });
   }, []);
 
-  return { state, setDietType, setFoods, setProfile, setGoalAndGenerate, reset, goBack };
+  return { state, setDietType, setFoods, setProfile, setGoal, setFastingAndGenerate, reset, goBack };
 }

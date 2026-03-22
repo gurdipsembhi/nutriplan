@@ -30,6 +30,14 @@ export interface IWeeklyDay {
 
 // ─── DietPlan document ───────────────────────────────────────────────────────
 
+export type FastingProtocol = "16:8" | "18:6" | "5:2" | "none";
+
+export interface IEatingWindow {
+  windowStart: string;   // "HH:MM"
+  windowEnd: string;     // "HH:MM"
+  mealsPerDay: number;
+}
+
 export interface IDietPlan extends Document {
   profile: {
     height: number;
@@ -49,6 +57,8 @@ export interface IDietPlan extends Document {
   generatedPlan: string;
   weeklyPlan: IWeeklyDay[];       // populated by Feature 1.2; empty array until generated
   isStale: boolean;               // true when |latestWeight - profile.weight| >= 3kg
+  fastingProtocol: FastingProtocol;
+  eatingWindow: IEatingWindow | null;  // null when fastingProtocol is "none"
   createdAt: Date;
   updatedAt: Date;
 }
@@ -113,9 +123,18 @@ const DietPlanSchema = new Schema<IDietPlan>(
       carbs:   Number,
       fat:     Number,
     },
-    generatedPlan: { type: String, required: true },
-    weeklyPlan:    { type: [WeeklyDaySchema], default: [] },
-    isStale:       { type: Boolean, default: false },
+    generatedPlan:    { type: String, required: true },
+    weeklyPlan:       { type: [WeeklyDaySchema], default: [] },
+    isStale:          { type: Boolean, default: false },
+    fastingProtocol: { type: String, enum: ["16:8", "18:6", "5:2", "none"], default: "none" },
+    eatingWindow: {
+      type: {
+        windowStart: { type: String },
+        windowEnd:   { type: String },
+        mealsPerDay: { type: Number },
+      },
+      default: null,
+    },
   },
   { timestamps: true }
 );

@@ -1,4 +1,4 @@
-import type { FoodItem, GeneratePlanResponse, DietType, Goal, UserProfile, DailyLog, Meal, MealPlanned, WeeklyDay, SwapMealOption, GroceryCategory, WeightLog, WeightTrend, WeeklyReport, Recipe, RecipeMealFood } from "../types";
+import type { FoodItem, GeneratePlanResponse, DietType, Goal, UserProfile, DailyLog, Meal, MealPlanned, WeeklyDay, SwapMealOption, GroceryCategory, WeightLog, WeightTrend, WeeklyReport, Recipe, RecipeMealFood, FastingProtocol } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
 
@@ -29,6 +29,7 @@ export async function generatePlan(params: {
   foods: string[];
   profile: UserProfile;
   goal: Goal;
+  fastingProtocol?: FastingProtocol;
 }): Promise<GeneratePlanResponse> {
   const res = await fetch(`${BASE_URL}/api/plans/generate`, {
     method: "POST",

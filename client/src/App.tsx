@@ -5,6 +5,7 @@ import StepDietType from "./components/steps/StepDietType";
 import StepFoods from "./components/steps/StepFoods";
 import StepProfile from "./components/steps/StepProfile";
 import StepGoal from "./components/steps/StepGoal";
+import StepFasting from "./components/steps/StepFasting";
 import GeneratingView from "./components/GeneratingView";
 import DietPlanView from "./components/DietPlanView";
 import DailyLogView from "./components/DailyLogView";
@@ -26,7 +27,7 @@ function getOrCreateUserId(): string {
 const USER_ID = getOrCreateUserId();
 
 export default function App() {
-  const { state, setDietType, setFoods, setProfile, setGoalAndGenerate, reset, goBack } = useDietPlan();
+  const { state, setDietType, setFoods, setProfile, setGoal, setFastingAndGenerate, reset, goBack } = useDietPlan();
   const [showLog,     setShowLog]     = useState(false);
   const [showWeekly,  setShowWeekly]  = useState(false);
   const [showGrocery, setShowGrocery] = useState(false);
@@ -123,7 +124,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-slate-100">
       {state.step !== "done" && state.step !== "generating" && (
-        <NavBar currentStep={state.step as 1 | 2 | 3 | 4} onBack={goBack} />
+        <NavBar currentStep={state.step as 1 | 2 | 3 | 4 | 5} onBack={goBack} />
       )}
 
       <main className="flex items-center justify-center min-h-screen px-4 py-8">
@@ -136,7 +137,13 @@ export default function App() {
         )}
         {state.step === 4 && (
           <StepGoal
-            onNext={setGoalAndGenerate}
+            onNext={setGoal}
+            error={state.error}
+          />
+        )}
+        {state.step === 5 && (
+          <StepFasting
+            onNext={setFastingAndGenerate}
             error={state.error}
           />
         )}

@@ -1,6 +1,13 @@
 export type DietType = "veg" | "nonveg";
 export type Goal = "fat_loss" | "muscle_gain" | "maintenance";
 export type Gender = "male" | "female";
+export type FastingProtocol = "16:8" | "18:6" | "5:2" | "none";
+
+export interface EatingWindow {
+  windowStart: string;
+  windowEnd: string;
+  mealsPerDay: number;
+}
 
 export interface UserProfile {
   height: number;
@@ -26,11 +33,12 @@ export interface FoodItem {
 }
 
 export interface DietPlanState {
-  step: 1 | 2 | 3 | 4 | "generating" | "done";
+  step: 1 | 2 | 3 | 4 | 5 | "generating" | "done";
   dietType: DietType | null;
   selectedFoods: string[];
   profile: UserProfile | null;
   goal: Goal | null;
+  fastingProtocol: FastingProtocol | null;
   targetCalories: number | null;
   macros: Macros | null;
   plan: string | null;

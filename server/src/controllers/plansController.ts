@@ -6,16 +6,29 @@ import type { RecipeMealFood } from "../services/geminiService";
 import { buildGroceryList } from "../services/groceryService";
 import { calcBMR, calcTDEE, goalCalories, calcMacros } from "../utils/calculations";
 
+// ─── Eating window lookup ─────────────────────────────────────────────────────
+
+type FastingProtocol = "16:8" | "18:6" | "5:2" | "none";
+
+const EATING_WINDOWS: Record<
+  Exclude<FastingProtocol, "none">,
+  { windowStart: string; windowEnd: string; mealsPerDay: number }
+> = {
+  "16:8": { windowStart: "12:00", windowEnd: "20:00", mealsPerDay: 3 },
+  "18:6": { windowStart: "13:00", windowEnd: "19:00", mealsPerDay: 2 },
+  "5:2":  { windowStart: "08:00", windowEnd: "20:00", mealsPerDay: 5 },
+};
+
 // ─── POST /api/plans/generate ─────────────────────────────────────────────────
-// Unchanged — still uses claudeService for the daily text plan.
 
 export const generatePlan = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { dietType, foods, profile, goal } = req.body as {
+    const { dietType, foods, profile, goal, fastingProtocol = "none" } = req.body as {
       dietType: "veg" | "nonveg";
       foods: string[];
       profile: { height: number; weight: number; age: number; gender: "male" | "female" };
       goal: "fat_loss" | "muscle_gain" | "maintenance";
+      fastingProtocol?: FastingProtocol;
     };
 
     if (!dietType || !foods || !profile || !goal) {
@@ -40,12 +53,17 @@ export const generatePlan = async (req: Request, res: Response): Promise<void> =
       .map((f) => `${f.name}: ${f.calories} kcal, ${f.protein}g protein, ${f.carbs}g carbs, ${f.fat}g fat, ${f.fiber}g fiber`)
       .join("\n");
 
+    const eatingWindow =
+      fastingProtocol !== "none" ? EATING_WINDOWS[fastingProtocol] : null;
+
     const planText = await generateDietPlan({
       goal,
       targetCalories,
       macros,
       dietType,
       foodsContext,
+      fastingProtocol,
+      eatingWindow,
     });
 
     const savedPlan = await DietPlan.create({
@@ -56,6 +74,8 @@ export const generatePlan = async (req: Request, res: Response): Promise<void> =
       targetCalories,
       macros,
       generatedPlan: planText,
+      fastingProtocol,
+      eatingWindow,
     });
 
     res.json({

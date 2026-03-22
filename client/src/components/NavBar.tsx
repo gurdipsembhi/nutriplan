@@ -1,9 +1,9 @@
 interface NavBarProps {
-  currentStep: 1 | 2 | 3 | 4;
+  currentStep: 1 | 2 | 3 | 4 | 5;
   onBack: () => void;
 }
 
-const STEPS = ["Diet Type", "Foods", "Profile", "Goal"];
+const STEPS = ["Diet Type", "Foods", "Profile", "Goal", "Fasting"];
 
 export default function NavBar({ currentStep, onBack }: NavBarProps) {
   return (
@@ -30,7 +30,7 @@ export default function NavBar({ currentStep, onBack }: NavBarProps) {
         {/* Step indicators */}
         <div className="flex items-center gap-1.5">
           {STEPS.map((_, i) => {
-            const stepNum = (i + 1) as 1 | 2 | 3 | 4;
+            const stepNum = (i + 1) as 1 | 2 | 3 | 4 | 5;
             const isComplete = currentStep > stepNum;
             const isActive = currentStep === stepNum;
             return (

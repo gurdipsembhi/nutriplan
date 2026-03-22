@@ -35,6 +35,8 @@ export interface DietPlanParams {
   macros: { protein: number; carbs: number; fat: number };
   dietType: string;
   foodsContext: string;
+  fastingProtocol?: "16:8" | "18:6" | "5:2" | "none";
+  eatingWindow?: { windowStart: string; windowEnd: string; mealsPerDay: number } | null;
 }
 
 export interface WeeklyPlanParams {
@@ -103,7 +105,43 @@ All values must be per 100g. Use lowercase food names as keys.`;
 
 // ─── Call 2: Diet Plan Generation ────────────────────────────────────────────
 
+function buildFastingConstraints(
+  protocol: string,
+  eatingWindow: { windowStart: string; windowEnd: string; mealsPerDay: number }
+): string {
+  if (protocol === "5:2") {
+    return `
+Fasting Protocol: 5:2 Intermittent Fasting
+- Generate TWO plans in your response:
+  1. NORMAL DAY PLAN (5 days/week): ${eatingWindow.mealsPerDay} meals, ${eatingWindow.windowStart}–${eatingWindow.windowEnd} window, full calorie target
+  2. RESTRICTED DAY PLAN (2 days/week): Maximum 500 kcal total, 2 small meals only, use the lowest-calorie foods from the list
+- Clearly label each plan with "--- NORMAL DAY ---" and "--- RESTRICTED DAY ---"`;
+  }
+
+  return `
+Fasting Protocol: ${protocol} Intermittent Fasting
+- Eating window: ${eatingWindow.windowStart} to ${eatingWindow.windowEnd} ONLY
+- All meals must be scheduled within this window — no food outside these hours
+- Generate exactly ${eatingWindow.mealsPerDay} meals (not 5)
+- Include the meal time (e.g. "12:00 — Meal 1") for each meal
+- Distribute calories evenly across the ${eatingWindow.mealsPerDay} meals`;
+}
+
 export async function generateDietPlan(params: DietPlanParams): Promise<string> {
+  const fastingSection =
+    params.fastingProtocol &&
+    params.fastingProtocol !== "none" &&
+    params.eatingWindow
+      ? buildFastingConstraints(params.fastingProtocol, params.eatingWindow)
+      : "";
+
+  const mealFormat =
+    params.fastingProtocol === "5:2"
+      ? "See fasting rules below for meal structure"
+      : params.eatingWindow
+      ? `${params.eatingWindow.mealsPerDay} meals within the eating window`
+      : "5 meals — Breakfast, Mid-Morning Snack, Lunch, Evening Snack, Dinner";
+
   const prompt = `You are a certified nutritionist. Generate a practical, detailed meal plan.
 
 User Profile:
@@ -111,13 +149,14 @@ User Profile:
 - Target Calories: ${params.targetCalories} kcal/day
 - Macros: Protein ${params.macros.protein}g | Carbs ${params.macros.carbs}g | Fat ${params.macros.fat}g
 - Diet Type: ${params.dietType}
+${fastingSection}
 
 Available foods and their nutrition per 100g:
 ${params.foodsContext}
 
 Rules:
 - Use ONLY the foods listed above. Never suggest foods not in the list.
-- Format: 5 meals — Breakfast, Mid-Morning Snack, Lunch, Evening Snack, Dinner
+- Format: ${mealFormat}
 - For each meal: food item, portion in grams, calories for that portion, meal total
 - Total daily calories must be within ±50 kcal of target
 - End with 3 practical tips tailored to the user's goal
