@@ -1,5 +1,5 @@
 import Food from "../models/Food";
-import { lookupNutrition } from "./claudeService";
+import { lookupNutrition } from "./geminiService";
 
 interface LookupResult {
   found: Record<string, unknown>[];

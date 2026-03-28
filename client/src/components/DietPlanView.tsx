@@ -1,14 +1,25 @@
 import type { Macros } from "../types";
 import MacroBar from "./MacroBar";
+import { useAuth } from "../context/AuthContext";
+import { displayWeight, displayHeight } from "../lib/unitConversions";
 
 interface DietPlanViewProps {
   plan: string;
   macros: Macros;
   targetCalories: number;
   onReset: () => void;
+  onTrack: () => void;
+  onWeeklyPlan: () => void;
+  onWeightTracker: () => void;
+  onWeeklyReport: () => void;
 }
 
-export default function DietPlanView({ plan, macros, targetCalories, onReset }: DietPlanViewProps) {
+export default function DietPlanView({ plan, macros, targetCalories, onReset, onTrack, onWeeklyPlan, onWeightTracker, onWeeklyReport }: DietPlanViewProps) {
+  const { units } = useAuth();
+  // displayWeight and displayHeight are available for use when weight/height props are added
+  void displayWeight;
+  void displayHeight;
+  void units;
   const lines = plan.split("\n");
 
   return (
@@ -110,13 +121,49 @@ export default function DietPlanView({ plan, macros, targetCalories, onReset }: 
         </div>
       </div>
 
-      {/* Reset button */}
-      <button
-        onClick={onReset}
-        className="w-full py-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-slate-300 hover:text-white text-sm font-medium transition-all duration-200"
-      >
-        Create Another Plan
-      </button>
+      {/* Action buttons */}
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={onTrack}
+          className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Track Today
+        </button>
+        <button
+          onClick={onWeeklyPlan}
+          className="w-full py-3.5 rounded-2xl bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.09] text-slate-200 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+          See Weekly Plan
+        </button>
+        <button
+          onClick={onWeightTracker}
+          className="w-full py-3.5 rounded-2xl bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.09] text-slate-200 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+          </svg>
+          Weight Tracker
+        </button>
+        <button
+          onClick={onWeeklyReport}
+          className="w-full py-3.5 rounded-2xl bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.09] text-slate-200 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+        >
+          <span>🏆</span>
+          Weekly Muscle Report
+        </button>
+        <button
+          onClick={onReset}
+          className="w-full py-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] text-slate-300 hover:text-white text-sm font-medium transition-all duration-200"
+        >
+          Create Another Plan
+        </button>
+      </div>
     </div>
   );
 }
